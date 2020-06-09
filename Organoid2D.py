@@ -176,8 +176,8 @@ class Organoid:
         self.oldRadius = self.Radius
         self.initRadius = self.Radius
         self.Dist = Distance(self.Pos)
-        self.NANOG = np.array([0.5 + random.gauss(0,0.05) for i in self.IDs])
-        self.GATA6 = np.array([0.5 + random.gauss(0,0.05) for i in self.IDs])
+        self.NANOG = np.array([random.gauss(0.5,0.01) for i in self.IDs])
+        self.GATA6 = np.array([random.gauss(0.5,0.01) for i in self.IDs])
         return
                             
     def cellDivision(self,Prm):
@@ -259,8 +259,8 @@ class Organoid:
         rhs_N = rhs[:len(self.IDs)]
         rhs_G = rhs[len(self.IDs):]
 
-        self.NANOG = self.NANOG + self.dt*100*rhs_N
-        self.GATA6 = self.GATA6 + self.dt*100*rhs_G
+        self.NANOG = self.NANOG + self.dt*Prm.relSpeed*rhs_N
+        self.GATA6 = self.GATA6 + self.dt*Prm.relSpeed*rhs_G
 
     def dataCollecting(self):     
         IDs = self.IDs[:]
@@ -271,7 +271,7 @@ class Organoid:
         self.Data.append([IDs,Pos,Radius,NANOG,GATA6])
         return
 
-def initializeOrganoid(Prm):
+def initializeOrganoid(Prm, Transcription = True):
 
     self = Organoid()
     self.__init__()
@@ -286,6 +286,8 @@ def initializeOrganoid(Prm):
         self.radiusGrowth(Prm)
         self.cellDivision(Prm)
         self.displacement(Prm)
-        self.transcription(Prm)
+        if Transcription == True:
+            self.transcription(Prm)
+            
         self.dataCollecting()
     return self   

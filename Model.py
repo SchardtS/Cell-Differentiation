@@ -57,29 +57,74 @@ def rhs_activation(t, x, Prm, FVmesh):
     rhs[:nofCells] = pN - Prm.gamma_N*N
     rhs[nofCells:] = pG - Prm.gamma_G*G
     
-    return rhs
+    return rhs*Prm.relSpeed
 
 def rhs_diffusion(t, x, Prm, FVmesh):
     nofCells = FVmesh.nofCells
     rhs = np.empty(len(x))
     N = x[:nofCells]
     G = x[nofCells:2*nofCells]
-    S = x[2*nofCells:]  
+    S = x[2*nofCells:]
+    #Dxx = dxx(FVmesh)
     Dxx = dxx_test(S,FVmesh)
     Sb = neighbor_mean(S, FVmesh)
 
-    a = np.exp(-eps_N)
-    b = np.exp(-eps_G)
-    c = np.exp(-eps_A)
+    a = np.exp(-Prm.eps_N)
+    b = np.exp(-Prm.eps_G)
+    c = np.exp(-Prm.eps_Sb)
+    d = np.exp(-Prm.eps_S)
 
     P = -np.exp(-(FVmesh.Pos[:,0]**2+FVmesh.Pos[:,1]**2)/1)
 
-    pN =       a*N     /(1 + a*N + b*G*(1+c*Sb))
-    pG = (b*G)*(1+c*Sb)/(1 + a*N + b*G*(1+c*Sb))
-    pS = 1 - pG#       1      /(1 + b*G)
+    pN = a*N / (1 + a*N + b*G + c*Sb + b*c*G*Sb)
+    pG = (b*G + b*c*G*Sb) / (1 + a*N + b*G + b*c*G*Sb)
+    pS = d*S / (1 + b*G + d*S + b*c*G*Sb)
     
     rhs[:nofCells] = pN - N
     rhs[nofCells:2*nofCells] = pG - G
-    rhs[2*nofCells:] = np.dot(Dxx,P) + pS - S
+    rhs[2*nofCells:] = pS - S - 10*np.dot(Dxx,P)
 
-    return rhs
+    return rhs*Prm.relSpeed
+
+
+
+############################################################################################
+
+def region_mean(x, FVmesh):
+    nofCells = len(x)
+    suma = np.empty(nofCells)
+
+    for i in range(nofCells):
+        mean = 0
+        for j in FVmesh.Neigh[i]:
+            mean += x[j]
+        
+        suma[i] = (mean + x[i])/(len(FVmesh.Neigh[i])+1)
+        
+    return suma
+
+
+def rhs_test(t, x, Prm, FVmesh):
+    nofCells = FVmesh.nofCells
+    rhs = np.empty(len(x))
+    N = x[:nofCells]
+    G = x[nofCells:2*nofCells]
+    S = x[2*nofCells:]
+    Sb = region_mean(S, FVmesh)
+
+    a = np.exp(-Prm.eps_N)
+    b = np.exp(-Prm.eps_G)
+    c = np.exp(-Prm.eps_S)
+    eps_act = 2
+    
+    nu = 1
+
+    pN =         nu*a*N         / (nu**2 + a*N + b*G*(nu+eps_act*c*Sb) + c*Sb)
+    pG =  b*G*(nu+eps_act*c*Sb) / (nu**2 + a*N + b*G*(nu+eps_act*c*Sb) + c*Sb)
+    pS =  c*Sb*(nu+eps_act*b*G) / (nu**2 + a*N + b*G*(nu+eps_act*c*Sb) + c*Sb)
+    
+    rhs[:nofCells] = pN - 10*N
+    rhs[nofCells:2*nofCells] = pG - 10*G
+    rhs[2*nofCells:] = pS - 10*S
+
+    return rhs*Prm.relSpeed

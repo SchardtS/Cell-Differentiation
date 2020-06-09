@@ -1,10 +1,11 @@
 class Parameters:     
     def __init__(self):
         # Energy differences
-        self.eps_N = -3
-        self.eps_G = -4
+        self.eps_N = -4
+        self.eps_G = -3
         self.eps_A = -1
-        self.eps_S = -1
+        self.eps_S = -3.4
+        self.eps_Sb = -4
 
         # Decay rates
         self.gamma_N = 1
@@ -17,7 +18,7 @@ class Parameters:
 
         # Time relevant parameters
         self.T = 24
-        self.nofSteps = 3000
+        self.nofSteps = 300
         self.dt = self.T/self.nofSteps
 
         # Newton's method parameters
@@ -28,11 +29,10 @@ class Parameters:
         self.nofCells_start = 10
         self.nofCells_end = 200
         self.rmax = 1
-        #self.T = 24
         self.sigma = 10
         self.alpha = 2
-        #self.steps = 3000
         self.F0 = 0.5
+        self.relSpeed = 2
 
 def setParameters():
     self = Parameters()

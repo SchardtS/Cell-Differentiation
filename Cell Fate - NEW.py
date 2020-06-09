@@ -16,8 +16,8 @@ Pos = np.array(pd.read_csv('testOrganoid.csv'))
 FVmesh = initializeFVmesh(Pos)
 
 t = np.linspace(0,Prm.T,Prm.nofSteps)
-xInit = np.array([0.5 + gauss(0,0.01) if i < FVmesh.nofCells else 
-                  0.5 + gauss(0,0.01) for i in range(2*FVmesh.nofCells)])
+xInit = np.array([0.2 + gauss(0,0.01) if i < FVmesh.nofCells else 
+                  0.2 + gauss(0,0.01) for i in range(2*FVmesh.nofCells)])
 rhs = lambda t,x: rhs_activation(0, x, Prm, FVmesh)
 sol = solve_ivp(rhs, [0,Prm.T], xInit, t_eval = t, method = 'Radau')
 
