@@ -43,6 +43,7 @@ def rhs_activation(t, x, Prm, FVmesh):
     a = np.exp(-Prm.eps_N)
     b = np.exp(-Prm.eps_G)
     c = np.exp(-Prm.eps_A)
+    d = np.exp(-Prm.eps_act)
 
     if Prm.signal == 'local':
         Gb = neighbor_mean(G,FVmesh)
@@ -51,8 +52,8 @@ def rhs_activation(t, x, Prm, FVmesh):
     else:
         print('Error: Mode not supported, choose local or nonlocal instead')
 
-    pN = ((a*N)*(1+c*Gb))/(1 + a*N*(1+c*Gb) + b*G)
-    pG =      (b*G)      /(1 + a*N*(1+c*Gb) + b*G)
+    pN = (a*N)*(1+d*c*Gb)/(1 + a*N*(1+d*c*Gb) + b*G + c*Gb)
+    pG =      (b*G)      /(1 + a*N*(1+d*c*Gb) + b*G + c*Gb)
 
     rhs[:nofCells] = pN - Prm.gamma_N*N
     rhs[nofCells:] = pG - Prm.gamma_G*G
@@ -123,8 +124,8 @@ def rhs_test(t, x, Prm, FVmesh):
     pG =  b*G*(nu+eps_act*c*Sb) / (nu**2 + a*N + b*G*(nu+eps_act*c*Sb) + c*Sb)
     pS =  c*Sb*(nu+eps_act*b*G) / (nu**2 + a*N + b*G*(nu+eps_act*c*Sb) + c*Sb)
     
-    rhs[:nofCells] = pN - 10*N
-    rhs[nofCells:2*nofCells] = pG - 10*G
-    rhs[2*nofCells:] = pS - 10*S
+    rhs[:nofCells] = pN - Prm.gamma_N*N
+    rhs[nofCells:2*nofCells] = pG - Prm.gamma_G*G
+    rhs[2*nofCells:] = pS - Prm.gamma_S*S
 
     return rhs*Prm.relSpeed
