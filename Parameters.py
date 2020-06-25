@@ -1,10 +1,10 @@
 class Parameters:     
     def __init__(self):
         # Energy differences
-        self.eps_N = -4
-        self.eps_G = -4
+        self.eps_N = -3
+        self.eps_G = -5
         self.eps_A = -1
-        self.eps_act = -1
+        self.eps_NA = -1
         self.eps_S = -3.4
         self.eps_Sb = -4
 
@@ -19,7 +19,7 @@ class Parameters:
 
         # Time relevant parameters
         self.T = 24
-        self.nofSteps = 300
+        self.nofSteps = 100
         self.dt = self.T/self.nofSteps
 
         # Newton's method parameters
@@ -33,7 +33,7 @@ class Parameters:
         self.sigma = 10
         self.alpha = 2
         self.F0 = 0.5
-        self.relSpeed = 2
+        self.relSpeed = 20
 
 def setParameters():
     self = Parameters()

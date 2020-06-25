@@ -43,7 +43,7 @@ def rhs_activation(t, x, Prm, FVmesh):
     a = np.exp(-Prm.eps_N)
     b = np.exp(-Prm.eps_G)
     c = np.exp(-Prm.eps_A)
-    d = np.exp(-Prm.eps_act)
+    d = np.exp(-Prm.eps_NA)
 
     if Prm.signal == 'local':
         Gb = neighbor_mean(G,FVmesh)
