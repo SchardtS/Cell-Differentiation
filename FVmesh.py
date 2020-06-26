@@ -51,13 +51,20 @@ class FVmesh:
         bbox = 3*np.array([[xmin,ymin],[xmin,ymax],[xmax,ymax],[xmax,ymin]])
         vor = Voronoi(np.append(self.Pos, bbox, axis=0))
         bounding_poly = Polygon(self.Hull.points[self.Hull.vertices]).buffer(self.D_mean/2)
+        if type(self.TE) != type(None):
+            TE_poly = Polygon(self.TE)
         
         polylist = []
-        for i, reg_num in enumerate(vor.point_region):
+        #for i, reg_num in enumerate(vor.point_region):
+        for reg_num in vor.point_region:
             indices = vor.regions[reg_num]
             if -1 not in indices:
                 poly = Polygon(vor.vertices[indices])
                 poly = bounding_poly.intersection(poly)
+                
+                if type(self.TE) != type(None):
+                    poly = TE_poly.intersection(poly)
+
                 polylist.append(poly)
         
         self.Poly = polylist
@@ -94,6 +101,8 @@ class FVmesh:
 
         if Val == ():
             for i in range(self.nofCells):
+                if self.Poly[i].is_empty:
+                    continue
                 x,y = self.Poly[i].exterior.xy
                 plt.plot(x,y, 'k', alpha = 0.8)
 
@@ -118,11 +127,12 @@ class FVmesh:
         plt.axis('off')
         #plt.show()
     
-def initializeFVmesh(pos, reduced = False):
+def initializeFVmesh(pos, TE=None, reduced = False):
 
     if reduced == False:
         self = FVmesh()
         self.__init__()
+        self.TE = TE
         self.Pos = pos
         self.nofCells = len(self.Pos)
         self.Tri = Delaunay(self.Pos)

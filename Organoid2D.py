@@ -29,7 +29,7 @@ def Forces(Pos,r,F0,a,dist,sigma):
     
     np.place(x_pairwise, dist/(r_pairwise) > sigma/2, 0)
     np.place(y_pairwise, dist/(r_pairwise) > sigma/2, 0)
-    
+ 
     F = F0*2*(np.exp(-2*a*(dist-r_pairwise)) - np.exp(-a*(dist-r_pairwise)))
     #F[dist > 2] = 0
 
@@ -37,6 +37,21 @@ def Forces(Pos,r,F0,a,dist,sigma):
     Fx = F*(x_pairwise)/dist
     Fy = F*(y_pairwise)/dist
     
+    return Fx, Fy
+
+def BoundaryForces(Pos,TE,r,F0,a,sigma):
+
+    norm = np.linalg.norm(Pos, axis=1)
+    diff = Pos - Pos/np.concatenate(([norm],[norm]), axis=0).T*5
+    dist_b = np.linalg.norm(diff, axis=1)
+
+    F_b = F0*2*(np.exp(-2*a*(dist_b-r)) - np.exp(-a*(dist_b-r)))
+    
+    Fx = F_b*diff[:,0]/dist_b
+    Fy = F_b*diff[:,1]/dist_b
+    Fx[norm == 0] = 0
+    Fy[norm == 0] = 0
+
     return Fx, Fy
 
 def DivisionProbability(r):
@@ -208,21 +223,21 @@ class Organoid:
                 Distance_between_new_cells = self.Radius[i]-NewRadius
                 Dbnc_low = (Distance_between_new_cells)/2.2
                 Dbnc_high = (Distance_between_new_cells)/1.8
+                Dbnc = random.uniform(Dbnc_low,Dbnc_high)
                 
-                rand = random.randint(0,1)
-                if rand == 0:
-                    RandomDistanceX = -random.uniform(Dbnc_low,Dbnc_high)
-                elif rand == 1:
-                    RandomDistanceX = random.uniform(Dbnc_low,Dbnc_high)
-                rand = random.randint(0,1)
-                if rand == 0:
-                    RandomDistanceY = -random.uniform(Dbnc_low,Dbnc_high)
-                elif rand == 1:
-                    RandomDistanceY = random.uniform(Dbnc_low,Dbnc_high)
+                angle = np.random.rand()*2*np.pi
+                dx = Dbnc*np.cos(angle)
+                dy = Dbnc*np.sin(angle)
 
-                RandomDistance = [RandomDistanceX,RandomDistanceY]
-                NewPos1 = np.array(self.Pos[i])+np.array(RandomDistance)
-                NewPos2 = np.array(self.Pos[i])-np.array(RandomDistance)
+                dPos = [dx,dy]
+                NewPos1 = np.array(self.Pos[i])+np.array(dPos)
+                NewPos2 = np.array(self.Pos[i])-np.array(dPos)
+
+                if np.linalg.norm(NewPos1) > 5:
+                    NewPos1 = NewPos1/(np.linalg.norm(NewPos1))*4
+                if np.linalg.norm(NewPos2) > 5:
+                    NewPos2 = NewPos2/(np.linalg.norm(NewPos2))*4
+
                 self.Pos = np.append(self.Pos, [NewPos1], axis=0)
                 self.Pos[i] = NewPos2
                 
@@ -247,8 +262,12 @@ class Organoid:
         Fx, Fy = Forces(self.Pos,self.Radius,Prm.F0,Prm.alpha,self.Dist,Prm.sigma)
         Fx_sum = np.sum(Fx, axis=1)
         Fy_sum = np.sum(Fy, axis=1)
+        displacement = np.array([Fx_sum,Fy_sum]).T
+        if type(self.TE) != type(None):
+            Fbx, Fby = BoundaryForces(self.Pos,self.Radius,Prm.F0,Prm.alpha,Prm.sigma)
+            displacement -= np.array([Fbx,Fby]).T
         
-        self.Pos = self.Pos - self.dt*np.array([Fx_sum,Fy_sum]).T
+        self.Pos = self.Pos - self.dt*displacement
         return
 
     def transcription(self, Prm):
@@ -271,10 +290,11 @@ class Organoid:
         self.Data.append([IDs,Pos,Radius,NANOG,GATA6])
         return
 
-def initializeOrganoid(Prm, Transcription = True):
+def initializeOrganoid(Prm, TE=None, Transcription = True):
 
     self = Organoid()
     self.__init__()
+    self.TE = TE
     self.t = 0
     self.k = GrowthRate(Prm)
     self.dt = Prm.dt

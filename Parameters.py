@@ -19,7 +19,7 @@ class Parameters:
 
         # Time relevant parameters
         self.T = 24
-        self.nofSteps = 100
+        self.nofSteps = 3000
         self.dt = self.T/self.nofSteps
 
         # Newton's method parameters
