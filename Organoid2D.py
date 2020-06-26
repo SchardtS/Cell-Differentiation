@@ -41,16 +41,18 @@ def Forces(Pos,r,F0,a,dist,sigma):
 
 def BoundaryForces(Pos,TE,r,F0,a,sigma):
 
-    norm = np.linalg.norm(Pos, axis=1)
-    diff = Pos - Pos/np.concatenate(([norm],[norm]), axis=0).T*5
-    dist_b = np.linalg.norm(diff, axis=1)
+    diff = np.empty(np.shape(Pos))
+    dist = np.empty(len(Pos))
+    for i in range(len(Pos)):
+        dist_arr = cdist([Pos[i]],TE)
+        ind = np.argmin(dist_arr[0])
+        diff[i] = Pos[i] - TE[ind]
+        dist[i] = dist_arr[0,ind]
 
-    F_b = F0*2*(np.exp(-2*a*(dist_b-r)) - np.exp(-a*(dist_b-r)))
+    F_b = F0*2*(np.exp(-2*a*(dist-r)) - np.exp(-a*(dist-r)))
     
-    Fx = F_b*diff[:,0]/dist_b
-    Fy = F_b*diff[:,1]/dist_b
-    Fx[norm == 0] = 0
-    Fy[norm == 0] = 0
+    Fx = F_b*diff[:,0]/dist
+    Fy = F_b*diff[:,1]/dist
 
     return Fx, Fy
 
@@ -233,11 +235,6 @@ class Organoid:
                 NewPos1 = np.array(self.Pos[i])+np.array(dPos)
                 NewPos2 = np.array(self.Pos[i])-np.array(dPos)
 
-                if np.linalg.norm(NewPos1) > 5:
-                    NewPos1 = NewPos1/(np.linalg.norm(NewPos1))*4
-                if np.linalg.norm(NewPos2) > 5:
-                    NewPos2 = NewPos2/(np.linalg.norm(NewPos2))*4
-
                 self.Pos = np.append(self.Pos, [NewPos1], axis=0)
                 self.Pos[i] = NewPos2
                 
@@ -264,7 +261,7 @@ class Organoid:
         Fy_sum = np.sum(Fy, axis=1)
         displacement = np.array([Fx_sum,Fy_sum]).T
         if type(self.TE) != type(None):
-            Fbx, Fby = BoundaryForces(self.Pos,self.Radius,Prm.F0,Prm.alpha,Prm.sigma)
+            Fbx, Fby = BoundaryForces(self.Pos,self.TE,self.Radius,Prm.F0,Prm.alpha,Prm.sigma)
             displacement -= np.array([Fbx,Fby]).T
         
         self.Pos = self.Pos - self.dt*displacement

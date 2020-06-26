@@ -28,7 +28,7 @@ class Parameters:
 
         # Organoid growth parameters
         self.nofCells_start = 10
-        self.nofCells_end = 200
+        self.nofCells_end = 30
         self.rmax = 1
         self.sigma = 10
         self.alpha = 2

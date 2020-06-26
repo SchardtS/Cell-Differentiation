@@ -7,13 +7,15 @@ import pandas as pd
 from matplotlib.animation import FuncAnimation
 
 Prm = setParameters()
-#TEfunc = lambda theta: np.array([4*np.cos(theta),9*np.sin(theta)]).T
-#TE = TEfunc(np.linspace(0,2*np.pi,100))
-TE = 5*np.array([[1,-1],[1,1],[-1,1],[-1,-1]])
-Organoid = initializeOrganoid(Prm, TE=None, Transcription=False)
-FVmesh = initializeFVmesh(Organoid.Pos, TE=None)
+TEfunc = lambda theta: np.array([3*np.cos(theta),9*np.sin(theta)-5]).T
+TE = TEfunc(np.linspace(0,2*np.pi,100))
+#TE = 5*np.array([[1,-1],[1,1],[-1,1],[-1,-1]])
+Organoid = initializeOrganoid(Prm, TE=TE, Transcription=False)
+FVmesh = initializeFVmesh(Organoid.Pos, TE=TE)
 
 FVmesh.plot()
+plt.xlim(min(Organoid.Pos[:,1])*1.3,max(Organoid.Pos[:,1])*1.3)
+plt.ylim(min(Organoid.Pos[:,1])*1.3,max(Organoid.Pos[:,1])*1.3)
 plt.show()
 
 """ fig, ax = plt.subplots()
