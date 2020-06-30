@@ -16,7 +16,7 @@ def Distance(Pos):
     dist = cdist(Pos, Pos)
     return dist
 
-def Forces(Pos,r,F0,a,dist,sigma):
+def Forces(Pos,r,F0,a,s,dist):
     rT = np.reshape(r,[len(r),1])
     x = Pos[:,0]
     y = Pos[:,1]
@@ -27,11 +27,8 @@ def Forces(Pos,r,F0,a,dist,sigma):
     x_pairwise = x-xT
     y_pairwise = y-yT
     
-    np.place(x_pairwise, dist/(r_pairwise) > sigma/2, 0)
-    np.place(y_pairwise, dist/(r_pairwise) > sigma/2, 0)
- 
-    F = F0*2*(np.exp(-2*a*(dist-r_pairwise)) - np.exp(-a*(dist-r_pairwise)))
-    #F[dist > 2] = 0
+    F = np.minimum(F0*2*a*(np.exp(-2*a*(dist-r_pairwise*s)) - np.exp(-a*(dist-r_pairwise*s))), 30)
+    #F[dist > r_pairwise] = 0
 
     np.fill_diagonal(dist, np.inf)
     Fx = F*(x_pairwise)/dist
@@ -39,7 +36,7 @@ def Forces(Pos,r,F0,a,dist,sigma):
     
     return Fx, Fy
 
-def BoundaryForces(Pos,TE,r,F0,a,sigma):
+def BoundaryForces(Pos,TE,r,F0,a,s):
 
     diff = np.empty(np.shape(Pos))
     dist = np.empty(len(Pos))
@@ -49,7 +46,8 @@ def BoundaryForces(Pos,TE,r,F0,a,sigma):
         diff[i] = Pos[i] - TE[ind]
         dist[i] = dist_arr[0,ind]
 
-    F_b = F0*2*(np.exp(-2*a*(dist-r)) - np.exp(-a*(dist-r)))
+    F_b = np.minimum(F0*10*2*a*(np.exp(-2*a*(dist-r*s)) - np.exp(-a*(dist-r*s))), 60)
+    #F_b[dist > r] = 0
     
     Fx = F_b*diff[:,0]/dist
     Fy = F_b*diff[:,1]/dist
@@ -193,8 +191,8 @@ class Organoid:
         self.oldRadius = self.Radius
         self.initRadius = self.Radius
         self.Dist = Distance(self.Pos)
-        self.NANOG = np.array([random.gauss(0.5,0.01) for i in self.IDs])
-        self.GATA6 = np.array([random.gauss(0.5,0.01) for i in self.IDs])
+        self.NANOG = np.array([random.gauss(0.2,0.01) for i in self.IDs])
+        self.GATA6 = np.array([random.gauss(0.2,0.01) for i in self.IDs])
         return
                             
     def cellDivision(self,Prm):
@@ -256,13 +254,14 @@ class Organoid:
      
     def displacement(self,Prm):
         self.Dist = Distance(self.Pos)
-        Fx, Fy = Forces(self.Pos,self.Radius,Prm.F0,Prm.alpha,self.Dist,Prm.sigma)
-        Fx_sum = np.sum(Fx, axis=1)
-        Fy_sum = np.sum(Fy, axis=1)
+        m = np.pi*self.Radius**2
+        Fx, Fy = Forces(self.Pos,self.Radius,Prm.F0,Prm.alpha,Prm.sigma,self.Dist)
+        Fx_sum = np.sum(Fx, axis=1)/m
+        Fy_sum = np.sum(Fy, axis=1)/m
         displacement = np.array([Fx_sum,Fy_sum]).T
         if type(self.TE) != type(None):
             Fbx, Fby = BoundaryForces(self.Pos,self.TE,self.Radius,Prm.F0,Prm.alpha,Prm.sigma)
-            displacement -= np.array([Fbx,Fby]).T
+            displacement -= np.array([Fbx/m,Fby/m]).T
         
         self.Pos = self.Pos - self.dt*displacement
         return
@@ -275,8 +274,8 @@ class Organoid:
         rhs_N = rhs[:len(self.IDs)]
         rhs_G = rhs[len(self.IDs):]
 
-        self.NANOG = self.NANOG + self.dt*Prm.relSpeed*rhs_N
-        self.GATA6 = self.GATA6 + self.dt*Prm.relSpeed*rhs_G
+        self.NANOG = self.NANOG + self.dt*rhs_N
+        self.GATA6 = self.GATA6 + self.dt*rhs_G
 
     def dataCollecting(self):     
         IDs = self.IDs[:]

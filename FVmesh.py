@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.spatial import Delaunay, Voronoi, ConvexHull
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, Point
 from numpy.linalg import solve, norm
 from scipy.spatial.distance import cdist
 import matplotlib.pyplot as plt
@@ -50,16 +50,22 @@ class FVmesh:
         ymin, ymax = min(self.Pos[:,1]), max(self.Pos[:,1])
         bbox = 3*np.array([[xmin,ymin],[xmin,ymax],[xmax,ymax],[xmax,ymin]])
         vor = Voronoi(np.append(self.Pos, bbox, axis=0))
-        bounding_poly = Polygon(self.Hull.points[self.Hull.vertices]).buffer(self.D_mean/2)
+        #bounding_poly = Polygon(self.Hull.points[self.Hull.vertices]).buffer(self.D_mean/2)
         if type(self.TE) != type(None):
             TE_poly = Polygon(self.TE)
         
         polylist = []
         #for i, reg_num in enumerate(vor.point_region):
-        for reg_num in vor.point_region:
+        for i, reg_num in enumerate(vor.point_region):
             indices = vor.regions[reg_num]
             if -1 not in indices:
+                if type(self.Radius) != type(None):
+                    radius = self.Radius[i]
+                else:
+                    radius = self.D_mean/2*10/9
+
                 poly = Polygon(vor.vertices[indices])
+                bounding_poly = Point(self.Pos[i,0], self.Pos[i,1]).buffer(radius)#self.D_mean/2)
                 poly = bounding_poly.intersection(poly)
                 
                 if type(self.TE) != type(None):
@@ -107,6 +113,8 @@ class FVmesh:
                 plt.plot(x,y, 'k', alpha = 0.8)
 
             plt.scatter(self.Pos[:,0],self.Pos[:,1], color = 'k', alpha=1, s=size)
+            if type(self.TE) != type(None):
+                plt.plot(self.TE[:,0], self.TE[:,1], color = 'r', lw = 2, alpha=0.8)
         
         else:
             Val = Val[0]
@@ -118,21 +126,26 @@ class FVmesh:
             mapper = cm.ScalarMappable(norm=norm, cmap='cool')
 
             for i in range(self.nofCells):
+                if self.Poly[i].is_empty:
+                    continue
                 x,y = self.Poly[i].exterior.xy
                 plt.fill(x,y, facecolor=mapper.to_rgba(float(Val[i])), edgecolor='k', alpha = 0.8, linewidth=1)
 
             plt.scatter(self.Pos[:,0],self.Pos[:,1], color = 'k', alpha=1, s=size)
+            if type(self.TE) != type(None):
+                plt.plot(self.TE[:,0], self.TE[:,1], color = 'r', lw = 2, alpha=0.8)
 
-        #plt.axes().set_aspect('equal', 'datalim')
+        #plt.axes().set_aspect('equal')
         plt.axis('off')
         #plt.show()
     
-def initializeFVmesh(pos, TE=None, reduced = False):
+def initializeFVmesh(pos, Radius=None, TE=None, reduced = False):
 
     if reduced == False:
         self = FVmesh()
         self.__init__()
         self.TE = TE
+        self.Radius = Radius
         self.Pos = pos
         self.nofCells = len(self.Pos)
         self.Tri = Delaunay(self.Pos)
