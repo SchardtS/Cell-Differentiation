@@ -28,7 +28,7 @@ def Forces(Pos,r,F0,a,s,dist):
     y_pairwise = y-yT
     
     F = np.minimum(F0*2*a*(np.exp(-2*a*(dist-r_pairwise*s)) - np.exp(-a*(dist-r_pairwise*s))), 30)
-    #F[dist > r_pairwise] = 0
+    F[dist > r_pairwise] = 0
 
     np.fill_diagonal(dist, np.inf)
     Fx = F*(x_pairwise)/dist
@@ -191,8 +191,8 @@ class Organoid:
         self.oldRadius = self.Radius
         self.initRadius = self.Radius
         self.Dist = Distance(self.Pos)
-        self.NANOG = np.array([random.gauss(0.2,0.01) for i in self.IDs])
-        self.GATA6 = np.array([random.gauss(0.2,0.01) for i in self.IDs])
+        self.NANOG = np.array([random.gauss(0.02,0.001) for i in self.IDs])
+        self.GATA6 = np.array([random.gauss(0.02,0.001) for i in self.IDs])
         return
                             
     def cellDivision(self,Prm):

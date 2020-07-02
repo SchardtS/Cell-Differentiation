@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from random import gauss
 from FVmesh import initializeFVmesh
 from Organoid2D import initializeOrganoid
-from Functions import coverPlot
+from Functions import coverPlot, saveData
 from Model import rhs_activation
 from Parameters import setParameters
 from scipy.integrate import solve_ivp
@@ -47,7 +47,8 @@ print('Number of GATA6 Cells =', len(G[G>N]))
 
 plt.figure()
 FVmesh.plot(N)
-
 """ coverPlot(N, G, 100, FVmesh)
 plt.show() """
 plt.show()
+
+saveData(FVmesh, N, G, 'Cell Fate')

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from FVmesh import initializeFVmesh
 from Parameters import setParameters
-from Functions import coverPlot
+from Functions import coverPlot, saveOrg, saveAnim
 
 Prm = setParameters()
 Organoid = initializeOrganoid(Prm)
@@ -14,22 +14,9 @@ print('Maximum NANOG expression level is', max(Organoid.NANOG))
 print('Number of NANOG Cells =', len(Organoid.NANOG[Organoid.NANOG>Organoid.GATA6]))
 print('Number of GATA6 Cells =', len(Organoid.GATA6[Organoid.GATA6>Organoid.NANOG]))
 
-
-indices = np.linspace(10,Prm.nofSteps,6)
-for i in indices:
-    index = int(i)
-    plt.figure()
-    N = Organoid.Data[index][3]
-    G = Organoid.Data[index][4]
-    Pos = Organoid.Data[index][1]
-    FVmesh = initializeFVmesh(Pos)
-    FVmesh.plot(N, size=1000/len(Organoid.IDs), bounds=[min(Organoid.NANOG),max(Organoid.NANOG)])
-    plt.xlim(min(Organoid.Pos[:,0])*1.3,max(Organoid.Pos[:,0])*1.3)
-    plt.ylim(min(Organoid.Pos[:,1])*1.3,max(Organoid.Pos[:,1])*1.3)
-    print('Number of Cells =', FVmesh.nofCells)
-
-coverPlot(N, G, 100, FVmesh)
-plt.show()
+folder = 'Cell Fate - Organoid'
+saveOrg(10, Organoid, Prm, folder)
+#saveAnim(Organoid, folder)
 
 #fig, ax = plt.subplots()
 """ def update1(i):
