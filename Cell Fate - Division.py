@@ -15,7 +15,7 @@ print('Number of NANOG Cells =', len(Organoid.NANOG[Organoid.NANOG>Organoid.GATA
 print('Number of GATA6 Cells =', len(Organoid.GATA6[Organoid.GATA6>Organoid.NANOG]))
 
 folder = 'Cell Fate - Organoid'
-saveOrg(10, Organoid, Prm, folder)
+saveOrg(20, Organoid, Prm, folder)
 #saveAnim(Organoid, folder)
 
 #fig, ax = plt.subplots()

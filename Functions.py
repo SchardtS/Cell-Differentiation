@@ -279,7 +279,8 @@ def saveOrg(n, Organoid, Prm, folder):
         N = Organoid.Data[index][3]
         G = Organoid.Data[index][4]
         Pos = Organoid.Data[index][1]
-        FVmesh = initializeFVmesh(Pos)
+        Rad = Organoid.Data[index][2]
+        FVmesh = initializeFVmesh(Pos, Radius = Rad)
         FVmesh.plot(N, size=1000/len(Organoid.IDs), bounds=[min(Organoid.NANOG),max(Organoid.NANOG)])
         plt.xlim(min(Organoid.Pos[:,0])*1.3,max(Organoid.Pos[:,0])*1.3)
         plt.ylim(min(Organoid.Pos[:,1])*1.3,max(Organoid.Pos[:,1])*1.3)
