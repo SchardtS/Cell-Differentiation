@@ -282,8 +282,10 @@ def saveOrg(n, Organoid, Prm, folder):
         Rad = Organoid.Data[index][2]
         FVmesh = initializeFVmesh(Pos, Radius = Rad)
         FVmesh.plot(N, size=1000/len(Organoid.IDs), bounds=[min(Organoid.NANOG),max(Organoid.NANOG)])
-        plt.xlim(min(Organoid.Pos[:,0])*1.3,max(Organoid.Pos[:,0])*1.3)
-        plt.ylim(min(Organoid.Pos[:,1])*1.3,max(Organoid.Pos[:,1])*1.3)
+        bmin = min(min(Organoid.Pos[:,0])*1.3,min(Organoid.Pos[:,1])*1.3)
+        bmax = max(max(Organoid.Pos[:,0])*1.3,max(Organoid.Pos[:,1])*1.3)
+        plt.xlim(bmin, bmax)
+        plt.ylim(bmin, bmax)
 
         k = str(j)+'of'+str(n)
         plt.savefig('Results/'+folder+'/NANOG_'+k+'.png')
@@ -296,7 +298,7 @@ def saveOrg(n, Organoid, Prm, folder):
 
     return
 
-def saveAnim(Organoid, folder):
+def saveAnim(Organoid, Prm, folder):
     fig, ax = plt.subplots()
 
     def update(i):
@@ -305,11 +307,13 @@ def saveAnim(Organoid, folder):
         FVmesh = initializeFVmesh(Pos)
         plt.cla()
         FVmesh.plot(NANOG, size=1000/len(Organoid.IDs), bounds=[min(Organoid.NANOG),max(Organoid.NANOG)])
-        plt.xlim(min(Organoid.Pos[:,0])*1.3,max(Organoid.Pos[:,0])*1.3)
-        plt.ylim(min(Organoid.Pos[:,1])*1.3,max(Organoid.Pos[:,1])*1.3)
+        bmin = min(min(Organoid.Pos[:,0])*1.3,min(Organoid.Pos[:,1])*1.3)
+        bmax = max(max(Organoid.Pos[:,0])*1.3,max(Organoid.Pos[:,1])*1.3)
+        plt.xlim(bmin, bmax)
+        plt.ylim(bmin, bmax)
         return
 
-    ani = FuncAnimation(fig, update, frames=3000, interval=1, blit=False)
+    ani = FuncAnimation(fig, update, frames=Prm.nofSteps, interval=1, blit=False)
     ani.save('Results/'+folder+'/NANOG.mp4', fps=70, dpi=400)
 
     return

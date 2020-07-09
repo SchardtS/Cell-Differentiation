@@ -1,11 +1,11 @@
 class Parameters:     
     def __init__(self):
         # Energy differences
-        self.eps_N = -6
-        self.eps_G = -7
+        self.eps_N = -7
+        self.eps_G = -6
         self.eps_A = -2
         self.eps_NA = -2
-        self.eps_S = -3.4
+        self.eps_S = -3
         self.eps_Sb = -4
 
         # Decay rates
@@ -28,12 +28,12 @@ class Parameters:
 
         # Organoid growth parameters
         self.nofCells_start = 9                    # Number of cells in the beginning
-        self.nofCells_end = 50                      # Approximate number of cells in the end
+        self.nofCells_end = 150                     # Approximate number of cells in the end
         self.rmax = 1                               # Maximum cell radius
-        self.alpha = 5                              # Cell stiffness
+        self.alpha = 2                              # Cell stiffness
         self.sigma = 0.7                            # Ratio of cell radius with balanced force between adhesion/repulsion
-        self.F0 = 1                               # Adhesion/repulsion scaling
-        self.relSpeed = 10                          # Speed of transcription relative to division/motion
+        self.F0 = 0.1                               # Adhesion/repulsion scaling
+        self.relSpeed = 1                          # Speed of transcription relative to division/motion
 
 def setParameters():
     self = Parameters()

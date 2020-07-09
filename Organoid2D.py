@@ -28,7 +28,7 @@ def Forces(Pos,r,F0,a,s,dist):
     y_pairwise = y-yT
     
     F = np.minimum(F0*2*a*(np.exp(-2*a*(dist-r_pairwise*s)) - np.exp(-a*(dist-r_pairwise*s))), 30)
-    #F[dist > r_pairwise] = 0
+    F[dist > r_pairwise] = 0
 
     np.fill_diagonal(dist, np.inf)
     Fx = F*(x_pairwise)/dist

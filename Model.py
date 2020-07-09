@@ -75,15 +75,13 @@ def rhs_diffusion(t, x, Prm, FVmesh):
     c = np.exp(-Prm.eps_Sb)
     d = np.exp(-Prm.eps_S)
 
-    P = -np.exp(-(FVmesh.Pos[:,0]**2+FVmesh.Pos[:,1]**2)/1)
-
     pN = a*N / (1 + a*N + b*G + c*Sb + b*c*G*Sb)
-    pG = (b*G + b*c*G*Sb) / (1 + a*N + b*G + b*c*G*Sb)
-    pS = d*S / (1 + b*G + d*S + b*c*G*Sb)
+    pG = b*G*(1 + c*Sb) / (1 + a*N + b*G + c*Sb + b*c*G*Sb)
+    pS = d*S / (1 + d*S + b*G)
     
-    rhs[:nofCells] = pN - N
-    rhs[nofCells:2*nofCells] = pG - G
-    rhs[2*nofCells:] = pS - S - 10*np.dot(Dxx,P)
+    rhs[:nofCells] = pN - Prm.gamma_N*N
+    rhs[nofCells:2*nofCells] = pG - Prm.gamma_G*G
+    rhs[2*nofCells:] = pS - Prm.gamma_S*S + 0.1*np.dot(Dxx,FVmesh.P)
 
     return rhs*Prm.relSpeed
 

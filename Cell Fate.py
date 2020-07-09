@@ -12,12 +12,19 @@ import os
 
 Prm = setParameters()
 #Organoid = initializeOrganoid(Prm)
-Pos = np.array(pd.read_csv('testOrganoid.csv'))
+x = np.linspace(-0.1,0.1,8)
+Pos = np.empty([len(x)**2,2])
+for i in range(len(x)):
+    for j in range(len(x)):
+        Pos[j+i*len(x),0] = x[j]
+        Pos[j+i*len(x),1] = x[i]
+
+#Pos = np.array(pd.read_csv('testOrganoid.csv'))
 FVmesh = initializeFVmesh(Pos)
 
 t = np.linspace(0,Prm.T,Prm.nofSteps)
-xInit = np.array([gauss(0.2,0.01) if i < FVmesh.nofCells else 
-                  gauss(0.2,0.01) for i in range(2*FVmesh.nofCells)])
+xInit = np.array([gauss(0.03,0.001) if i < FVmesh.nofCells else 
+                  gauss(0.03,0.001) for i in range(2*FVmesh.nofCells)])
 rhs = lambda t,x: rhs_activation(0, x, Prm, FVmesh)
 sol = solve_ivp(rhs, [0,Prm.T], xInit, t_eval = t, method = 'Radau')
 
@@ -47,8 +54,5 @@ print('Number of GATA6 Cells =', len(G[G>N]))
 
 plt.figure()
 FVmesh.plot(N)
-""" coverPlot(N, G, 100, FVmesh)
-plt.show() """
 plt.show()
-
 saveData(FVmesh, N, G, 'Cell Fate')

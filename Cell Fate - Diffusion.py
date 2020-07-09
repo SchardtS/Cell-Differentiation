@@ -2,8 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from random import gauss
 from FVmesh import initializeFVmesh
-from Functions import *
-from Model import rhs_diffusion, rhs_test
+from Model import rhs_diffusion
 from Solver import solveEquation
 from Parameters import setParameters
 from scipy.integrate import solve_ivp
@@ -13,14 +12,14 @@ import os
 
 ############# INITIALIZE GEOMETRY #############
 Prm = setParameters()
-#Org = initializeOrganoid(Prm, Transcription = False)
-Pos = np.array(pd.read_csv('testOrganoid.csv'))
-#Pos = Org.Pos
+Org = initializeOrganoid(Prm, Transcription = False)
+Pos = Org.Pos
+#Pos = np.array(pd.read_csv('testOrganoid.csv'))
 FVmesh = initializeFVmesh(Pos)
-#FVmesh.P = Org.Radius**2*np.pi/FVmesh.Vol
+FVmesh.P = Org.Radius**2*np.pi/FVmesh.Vol
 
 xInit = np.array([gauss(0.01,0.001) for i in range(3*FVmesh.nofCells)])
-f = lambda t,x: rhs_test(0, x, Prm, FVmesh)
+f = lambda t,x: rhs_diffusion(0, x, Prm, FVmesh)
 t = np.linspace(0,Prm.T,Prm.nofSteps)
 sol = solve_ivp(f, [0,Prm.T], xInit, t_eval = t, method = 'Radau')
 
@@ -58,5 +57,6 @@ plt.xlabel('Time')
 plt.figure()
 FVmesh.plot(N)
 plt.figure()
-FVmesh.plot(S)
+FVmesh.plot(FVmesh.P)
 plt.show()
+saveData(FVmesh, N, G, 'Cell Fate - Diffusion')
