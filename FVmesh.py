@@ -48,14 +48,13 @@ class FVmesh:
     def polygons(self):
         xmin, xmax = min(self.Pos[:,0]), max(self.Pos[:,0])
         ymin, ymax = min(self.Pos[:,1]), max(self.Pos[:,1])
-        bbox = 3*np.array([[xmin,ymin],[xmin,ymax],[xmax,ymax],[xmax,ymin]])
+        bbox = 10*np.array([[xmin,ymin],[xmin,ymax],[xmax,ymax],[xmax,ymin]])
         vor = Voronoi(np.append(self.Pos, bbox, axis=0))
         #bounding_poly = Polygon(self.Hull.points[self.Hull.vertices]).buffer(self.D_mean/2)
         if type(self.TE) != type(None):
             TE_poly = Polygon(self.TE)
         
         polylist = []
-        #for i, reg_num in enumerate(vor.point_region):
         for i, reg_num in enumerate(vor.point_region):
             indices = vor.regions[reg_num]
             if -1 not in indices:

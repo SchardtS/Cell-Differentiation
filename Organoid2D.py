@@ -28,7 +28,7 @@ def Forces(Pos,r,F0,a,s,dist):
     y_pairwise = y-yT
     
     F = np.minimum(F0*2*a*(np.exp(-2*a*(dist-r_pairwise*s)) - np.exp(-a*(dist-r_pairwise*s))), 30)
-    F[dist > r_pairwise] = 0
+    #F[dist > r_pairwise] = 0
 
     np.fill_diagonal(dist, np.inf)
     Fx = F*(x_pairwise)/dist
@@ -46,7 +46,7 @@ def BoundaryForces(Pos,TE,r,F0,a,s):
         diff[i] = Pos[i] - TE[ind]
         dist[i] = dist_arr[0,ind]
 
-    F_b = np.minimum(F0*10*2*a*(np.exp(-2*a*(dist-r*s)) - np.exp(-a*(dist-r*s))), 60)
+    F_b = np.minimum(F0*2*2*a*(np.exp(-2*a*(dist-r*s)) - np.exp(-a*(dist-r*s))), 60)
     #F_b[dist > r] = 0
     
     Fx = F_b*diff[:,0]/dist
@@ -260,7 +260,7 @@ class Organoid:
         displacement = np.array([Fx_sum,Fy_sum]).T
         if type(self.TE) != type(None):
             Fbx, Fby = BoundaryForces(self.Pos,self.TE,self.Radius,Prm.F0,Prm.alpha,Prm.sigma)
-            displacement -= np.array([Fbx/m,Fby/m]).T
+            displacement -= np.array([Fbx,Fby]).T
         
         self.Pos = self.Pos - self.dt*displacement
 

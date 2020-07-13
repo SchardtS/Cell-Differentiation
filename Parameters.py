@@ -28,9 +28,9 @@ class Parameters:
 
         # Organoid growth parameters
         self.nofCells_start = 9                    # Number of cells in the beginning
-        self.nofCells_end = 150                     # Approximate number of cells in the end
+        self.nofCells_end = 30                     # Approximate number of cells in the end
         self.rmax = 1                               # Maximum cell radius
-        self.alpha = 2                              # Cell stiffness
+        self.alpha = 3                              # Cell stiffness
         self.sigma = 0.7                            # Ratio of cell radius with balanced force between adhesion/repulsion
         self.F0 = 0.1                               # Adhesion/repulsion scaling
         self.relSpeed = 1                          # Speed of transcription relative to division/motion

@@ -7,7 +7,7 @@ import pandas as pd
 from matplotlib.animation import FuncAnimation
 
 Prm = setParameters()
-TEfunc = lambda theta: np.array([7*np.cos(theta),7*(np.sin(theta)-2/3)]).T
+TEfunc = lambda theta: np.array([4*np.cos(theta),5*(np.sin(theta)-0.7)]).T
 TE = TEfunc(np.linspace(0,2*np.pi,100))
 Organoid = initializeOrganoid(Prm, TE=TE, Transcription=True)
 FVmesh = initializeFVmesh(Organoid.Pos, Radius=Organoid.Radius, TE=TE)
