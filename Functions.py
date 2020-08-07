@@ -204,7 +204,7 @@ def Eq2Mat(eq, N):
     return Mat
 
 
-def coverPlot(N, G, nofCalc, FVmesh):
+def coverPlot(N, G, nofCalc, FVmesh, folder):
     nofCells = len(FVmesh.Pos)
     cover_N = np.empty(nofCells)
     cover_G = np.empty(nofCells)
@@ -219,35 +219,37 @@ def coverPlot(N, G, nofCalc, FVmesh):
             G_cells = 0
             for j in range(nofCells):
                 if (np.linalg.norm(FVmesh.Pos[j] - FVmesh.Pos[i])) <= r:
-                    Vi += FVmesh.Vol[j]
+                    Vi += 1#FVmesh.Vol[j]
                     if N[j] > G[j]:
-                        N_cells += 1*FVmesh.Vol[j]
+                        N_cells += 1#*FVmesh.Vol[j]
                     else:
-                        G_cells += 1*FVmesh.Vol[j]
+                        G_cells += 1#*FVmesh.Vol[j]
             
             cover_N[i] = N_cells/Vi
             cover_G[i] = G_cells/Vi
 
-        f_N[k] = np.mean(cover_N)
-        f_G[k] = np.mean(cover_G)
+        f_N[k] = np.mean(cover_N)/len(N[N>G])*len(N)
+        f_G[k] = np.mean(cover_G)/len(G[G>N])*len(N)
         
+    ylimiter = max(max(abs(f_N)-1),max(abs(f_G-1)))
+    ylimiter = np.ceil(ylimiter*100)/100
     plt.figure()
     plt.rc('font', size=14)
     plt.plot(radius/radius[-1],f_N, lw = 3, color = 'm')
-    plt.xlabel('Radius')
-    plt.ylabel('$\\rho$')
-        
-    plt.axhline(sum(FVmesh.Vol[N>G])/sum(FVmesh.Vol), color = 'k', linestyle = '--', lw = 2)
-    plt.axhline(len(N[N>G])/len(N), color = 'k', linestyle = '--', lw = 2)
-
-    plt.figure()
-    plt.rc('font', size=14)
     plt.plot(radius/radius[-1],f_G, lw = 3, color = 'c')
     plt.xlabel('Radius')
     plt.ylabel('$\\rho$')
+    plt.ylim([1-ylimiter-ylimiter/10,1+ylimiter+ylimiter/10])
+    plt.locator_params(axis='y', nbins=3)
+    
+    """ from matplotlib.ticker import FormatStrFormatter
+    ax = plt.gca()
+    ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f')) """
         
-    plt.axhline(sum(FVmesh.Vol[G>N])/sum(FVmesh.Vol), color = 'k', linestyle = '--', lw = 2)
-    plt.axhline(len(G[G>N])/len(N), color = 'k', linestyle = '--', lw = 2)
+    plt.axhline(1, color = 'k', linestyle = '--', lw = 2)
+
+    plt.savefig('Results/'+folder+'/PairCorr.png')
+    plt.savefig('Results/'+folder+'/PairCorr.pdf')
 
     return
 

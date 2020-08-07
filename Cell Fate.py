@@ -19,8 +19,9 @@ for i in range(len(x)):
         Pos[j+i*len(x),0] = x[j]
         Pos[j+i*len(x),1] = x[i]
 
-#Pos = np.array(pd.read_csv('testOrganoid.csv'))
-FVmesh = initializeFVmesh(Pos)
+Pos = np.array(pd.read_csv('testOrganoid.csv'))
+Radius = np.ones(len(Pos))*1.1
+FVmesh = initializeFVmesh(Pos, Radius=Radius)
 
 t = np.linspace(0,Prm.T,Prm.nofSteps)
 xInit = np.array([gauss(0.03,0.001) if i < FVmesh.nofCells else 
@@ -54,5 +55,6 @@ print('Number of GATA6 Cells =', len(G[G>N]))
 
 plt.figure()
 FVmesh.plot(N)
+#coverPlot(N, G, 100, FVmesh, 'Cell Fate')
 plt.show()
 saveData(FVmesh, N, G, 'Cell Fate')
