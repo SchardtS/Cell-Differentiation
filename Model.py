@@ -34,11 +34,13 @@ def convolute(x, Prm, FVmesh):
     #np.fill_diagonal(FVmesh.Dist, np.inf)
     #Phi = x/FVmesh.Dist**Prm.range
     
-    #Phi = x/(4*np.pi*Prm.range)*np.exp(-FVmesh.Dist**2/(4*Prm.range))
+    Phi = x/(4*np.pi*Prm.range)*np.exp(-FVmesh.Dist**2/(4*Prm.range))
+    #Phi = x*np.exp(-FVmesh.Dist**2/Prm.range)
 
-    np.fill_diagonal(FVmesh.Dist, 1)
+
+    #np.fill_diagonal(FVmesh.Dist, 1)
     #Phi = Prm.production*x/(2*np.pi)*kn(0,Prm.uptake**(1/2)*FVmesh.Dist)
-    Phi = Prm.production*x*np.exp(-Prm.uptake**(1/2)*FVmesh.Dist)/(4*np.pi*FVmesh.Dist)
+    #Phi = Prm.production*x*np.exp(-Prm.uptake**(1/2)*FVmesh.Dist)/(4*np.pi*FVmesh.Dist)
     np.fill_diagonal(Phi, 0)
 
     return np.sum(Phi, axis=1)#/len(x)
