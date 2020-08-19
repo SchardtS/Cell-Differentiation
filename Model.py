@@ -34,7 +34,7 @@ def convolute(x, Prm, FVmesh):
     #np.fill_diagonal(FVmesh.Dist, np.inf)
     #Phi = x/FVmesh.Dist**Prm.range
     
-    Phi = x/(4*np.pi*Prm.range)*np.exp(-FVmesh.Dist**2/(4*Prm.range))
+    Phi = x/(4*np.pi*Prm.range)*np.exp(-(FVmesh.Dist)**2/(4*Prm.range))
     #Phi = x*np.exp(-FVmesh.Dist**2/Prm.range)
 
 
