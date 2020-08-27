@@ -194,6 +194,7 @@ def dxx_test(a,FVmesh):
 
     return dxx_mat
 
+
 def Eq2Mat(eq, N):
     E = np.eye(N)
     Mat = np.empty([N,N])

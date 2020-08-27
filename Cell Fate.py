@@ -24,8 +24,10 @@ Radius = np.ones(len(Pos))*1.1
 FVmesh = initializeFVmesh(Pos, Radius=Radius)
 
 t = np.linspace(0,Prm.T,Prm.nofSteps)
-xInit = np.array([gauss(0.03,0.001) if i < FVmesh.nofCells else 
-                  gauss(0.03,0.001) for i in range(2*FVmesh.nofCells)])
+
+x0 = [Prm.r_N/Prm.gamma_N*3/4, Prm.r_G/Prm.gamma_G*3/4]
+xInit = np.array([gauss(x0[0],x0[0]*0.01) if i < FVmesh.nofCells else 
+                  gauss(x0[1],x0[1]*0.01) for i in range(2*FVmesh.nofCells)])
 rhs = lambda t,x: rhs_activation(0, x, Prm, FVmesh)
 sol = solve_ivp(rhs, [0,Prm.T], xInit, t_eval = t, method = 'Radau')
 
@@ -52,6 +54,8 @@ plt.ylabel('Concentrations')
 print('Number of Cells =', FVmesh.nofCells)
 print('Number of NANOG Cells =', len(N[N>G]))
 print('Number of GATA6 Cells =', len(G[G>N]))
+D = Prm.D*Prm.T/Prm.nofSteps
+print('Diffusivity =', D)
 
 plt.figure()
 FVmesh.plot(N)

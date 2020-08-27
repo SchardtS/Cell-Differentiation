@@ -1,20 +1,27 @@
+import numpy as np
+
 class Parameters:     
     def __init__(self):
         # Energy differences
         self.eps_N = -6
-        self.eps_G = -6.5
+        self.eps_G = -7.5
         self.eps_S = -2
         self.eps_NS = -2
         #self.eps_S = -3
         #self.eps_Sb = -4
 
         # Decay rates
-        self.gamma_N = 10
-        self.gamma_G = 10
-        self.gamma_S = 10
+        self.gamma_N = 100
+        self.gamma_G = 100
+        self.gamma_S = 100
+
+        # Reproduction rates
+        self.r_N = 10
+        self.r_G = 10
 
         # Signal parameters
         self.range = 10
+        self.D = 100
         self.production = 20
         self.uptake = 1e-3
         self.signal = 'nonlocal'
@@ -35,7 +42,7 @@ class Parameters:
         self.alpha = 3                              # Cell stiffness
         self.sigma = 0.7                            # Ratio of cell radius with balanced force between adhesion/repulsion
         self.F0 = 0.1                               # Adhesion/repulsion scaling
-        self.relSpeed = 10                        # Speed of transcription relative to division/motion
+        #self.relSpeed = 10                        # Speed of transcription relative to division/motion
 
 def setParameters():
     self = Parameters()

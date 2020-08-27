@@ -34,7 +34,8 @@ def convolute(x, Prm, FVmesh):
     #np.fill_diagonal(FVmesh.Dist, np.inf)
     #Phi = x/FVmesh.Dist**Prm.range
     
-    Phi = x/(4*np.pi*Prm.range)*np.exp(-(FVmesh.Dist)**2/(4*Prm.range))
+    D = Prm.D*Prm.T/Prm.nofSteps
+    Phi = x/(4*np.pi*D)*np.exp(-(FVmesh.Dist)**2/(4*D))
     #Phi = x*np.exp(-FVmesh.Dist**2/Prm.range)
 
 
@@ -77,10 +78,10 @@ def rhs_activation(t, x, Prm, FVmesh):
     pN = (a*N)*(1+d*c*S)/(1 + a*N*(1+d*c*S) + b*G + c*S)
     pG =      (b*G)      /(1 + a*N*(1+d*c*S) + b*G + c*S)
 
-    rhs[:nofCells] = pN - Prm.gamma_N*N
-    rhs[nofCells:] = pG - Prm.gamma_G*G
+    rhs[:nofCells] = Prm.r_N*pN - Prm.gamma_N*N
+    rhs[nofCells:] = Prm.r_G*pG - Prm.gamma_G*G
     
-    return rhs*Prm.relSpeed
+    return rhs#*Prm.relSpeed
 
 def rhs_diffusion(t, x, Prm, FVmesh):
     nofCells = FVmesh.nofCells
