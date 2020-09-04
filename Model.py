@@ -29,13 +29,22 @@ def neighbor_mean(x, FVmesh):
         
     return suma
 
+def relative_distance(v, FVmesh):
+    from scipy.spatial.distance import cdist
+    
+    rel_Pos = FVmesh.Pos - v
+
+    return cdist(FVmesh.Pos, rel_Pos)
+
 def convolute(x, Prm, FVmesh):
     
     #np.fill_diagonal(FVmesh.Dist, np.inf)
     #Phi = x/FVmesh.Dist**Prm.range
     
-    D = Prm.D*Prm.T/Prm.nofSteps
-    Phi = x/(4*np.pi*D)*np.exp(-(FVmesh.Dist)**2/(4*D))
+    D = Prm.D
+    dt = Prm.dt
+    #Dist = relative_distance([0,-300000*dt], FVmesh)
+    Phi = x/(4*np.pi*D*dt)*np.exp(-(FVmesh.Dist)**2/(4*D*dt))
     #Phi = x*np.exp(-FVmesh.Dist**2/Prm.range)
 
 

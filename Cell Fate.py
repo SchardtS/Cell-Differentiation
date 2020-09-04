@@ -54,11 +54,12 @@ plt.ylabel('Concentrations')
 print('Number of Cells =', FVmesh.nofCells)
 print('Number of NANOG Cells =', len(N[N>G]))
 print('Number of GATA6 Cells =', len(G[G>N]))
-D = Prm.D*Prm.T/Prm.nofSteps
+D = Prm.D*25/3600
 print('Diffusivity =', D)
+print(Prm.dt*Prm.D)
 
 plt.figure()
 FVmesh.plot(N)
 #coverPlot(N, G, 100, FVmesh, 'Cell Fate')
 plt.show()
-saveData(FVmesh, N, G, 'Cell Fate')
+saveData(FVmesh, Prm, N, G, 'Cell Fate')

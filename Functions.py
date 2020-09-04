@@ -254,7 +254,7 @@ def coverPlot(N, G, nofCalc, FVmesh, folder):
 
     return
 
-def saveData(FVmesh, N, G, folder):
+def saveData(FVmesh, Prm, N, G, folder):
 
     dic = {'x-Position': FVmesh.Pos[:,0], 'y-Position': FVmesh.Pos[:,1],
          'Radius': FVmesh.Radius, 'NANOG': N, 'GATA6': G}
@@ -271,6 +271,41 @@ def saveData(FVmesh, N, G, folder):
     plt.savefig('Results/'+folder+'/GATA6.png')
     plt.savefig('Results/'+folder+'/GATA6.pdf')
 
+    with open('Results/'+folder+'/Parameters.txt', 'w') as f:
+        print('Energy differences---------------------', file=f)
+        print('eps_N =', Prm.eps_N, file=f)
+        print('eps_G =', Prm.eps_G, file=f)
+        print('eps_S =', Prm.eps_S, file=f)
+        print('eps_NS =', Prm.eps_NS, file=f)
+        print('', file=f)
+
+        print('Reproduction rates---------------------', file=f)
+        print('r_N =', Prm.r_N, file=f)
+        print('r_G =', Prm.r_G, file=f)
+        print('', file=f)
+
+        print('Decay rates----------------------------', file=f)
+        print('gamma_N =', Prm.gamma_N, file=f)
+        print('gamma_G =', Prm.gamma_G, file=f)
+        print('', file=f)
+
+        print('Signal parameters----------------------', file=f)
+        print('signal =', Prm.signal, file=f)
+        if Prm.signal == 'nonlocal':
+            print('D =', Prm.D, file=f)
+
+        print('', file=f)
+
+        print('Numerical parameters-------------------', file=f)
+        print('T', Prm.T, file=f)
+        print('nofSteps =', Prm.nofSteps, file=f)
+        print('dt =', Prm.dt, file=f)
+        print('', file=f)
+ 
+        print('Cell numbers---------------------------', file=f)
+        print('Number of Cells =', FVmesh.nofCells, file=f)
+        print('Number of NANOG Cells =', len(N[N>G]), file=f)
+        print('Number of GATA6 Cells =', len(G[G>N]), file=f)
     return
 
 def saveOrg(n, Organoid, Prm, folder):
@@ -298,6 +333,51 @@ def saveOrg(n, Organoid, Prm, folder):
          'Radius': FVmesh.Radius, 'NANOG': N, 'GATA6': G}
         df = pd.DataFrame(dic)
         df.to_csv('Results/'+folder+'/Data_'+k+'.csv', index = False)
+
+        with open('Results/'+folder+'/Parameters.txt', 'w') as f:
+            print('Energy differences---------------------', file=f)
+            print('eps_N =', Prm.eps_N, file=f)
+            print('eps_G =', Prm.eps_G, file=f)
+            print('eps_S =', Prm.eps_S, file=f)
+            print('eps_NS =', Prm.eps_NS, file=f)
+            print('', file=f)
+
+            print('Reproduction rates---------------------', file=f)
+            print('r_N =', Prm.r_N, file=f)
+            print('r_G =', Prm.r_G, file=f)
+            print('', file=f)
+
+            print('Decay rates----------------------------', file=f)
+            print('gamma_N =', Prm.gamma_N, file=f)
+            print('gamma_G =', Prm.gamma_G, file=f)
+            print('', file=f)
+
+            print('Signal parameters----------------------', file=f)
+            print('signal =', Prm.signal, file=f)
+            if Prm.signal == 'nonlocal':
+                print('D =', Prm.D, file=f)
+
+            print('', file=f)
+
+            print('Numerical parameters-------------------', file=f)
+            print('T', Prm.T, file=f)
+            print('nofSteps =', Prm.nofSteps, file=f)
+            print('dt =', Prm.dt, file=f)
+            print('', file=f)
+
+            print('Growth parameters----------------------', file=f)
+            print('nofCells_start =', Prm.nofCells_start, file=f)
+            print('nofCells_end =', Prm.nofCells_end, file=f)
+            print('r_max =', Prm.rmax, file=f)
+            print('alpha =', Prm.alpha, file=f)
+            print('sigma =', Prm.sigma, file=f)
+            print('F0 =', Prm.F0, file=f)
+            print('', file=f)
+
+            print('Cell numbers---------------------------', file=f)
+            print('Number of Cells =', FVmesh.nofCells, file=f)
+            print('Number of NANOG Cells =', len(N[N>G]), file=f)
+            print('Number of GATA6 Cells =', len(G[G>N]), file=f)
 
     return
 

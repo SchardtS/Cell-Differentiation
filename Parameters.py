@@ -4,7 +4,7 @@ class Parameters:
     def __init__(self):
         # Energy differences
         self.eps_N = -6
-        self.eps_G = -7.5
+        self.eps_G = -6.01
         self.eps_S = -2
         self.eps_NS = -2
         #self.eps_S = -3
@@ -19,17 +19,17 @@ class Parameters:
         self.r_N = 10
         self.r_G = 10
 
-        # Signal parameters
-        self.range = 10
-        self.D = 100
-        self.production = 20
-        self.uptake = 1e-3
-        self.signal = 'nonlocal'
-
         # Time relevant parameters
         self.T = 24
         self.nofSteps = 300
         self.dt = self.T/self.nofSteps
+
+        # Signal parameters
+        self.range = 10
+        self.D = 20 / 25
+        #self.production = 20
+        #self.uptake = 1e-3
+        self.signal = 'nonlocal'
 
         # Newton's method parameters (currently no longer relevant)
         self.Maxit = 20
