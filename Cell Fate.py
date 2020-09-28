@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from random import gauss
 from FVmesh import initializeFVmesh
 from Organoid2D import initializeOrganoid
-from Functions import coverPlot, saveData
+from Functions import coverPlot, saveData, paircorrelation
 from Model import rhs_activation
 from Parameters import setParameters
 from scipy.integrate import solve_ivp
@@ -60,6 +60,7 @@ print(Prm.dt*Prm.D)
 
 plt.figure()
 FVmesh.plot(N)
+paircorrelation(N, G, FVmesh)
 #coverPlot(N, G, 100, FVmesh, 'Cell Fate')
 plt.show()
 saveData(FVmesh, Prm, N, G, 'Cell Fate')

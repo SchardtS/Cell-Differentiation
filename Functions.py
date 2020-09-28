@@ -254,6 +254,48 @@ def coverPlot(N, G, nofCalc, FVmesh, folder):
 
     return
 
+def paircorrelation(N, G, FVmesh):
+    Gr = nx.Graph()
+    for path in FVmesh.Tri.simplices:
+    
+        path1 = [path[0], path[1]]
+        path2 = [path[1], path[2]]
+        path3 = [path[2], path[0]]
+
+        if FVmesh.Dist[path1[0],path1[1]] < 2.2:
+            nx.add_path(Gr, path1)
+        if FVmesh.Dist[path2[0],path2[1]] < 2.2:    
+            nx.add_path(Gr, path2)
+        if FVmesh.Dist[path3[0],path3[1]] < 2.2:
+            nx.add_path(Gr, path3)
+        
+    dist_dict = dict(nx.all_pairs_dijkstra_path_length(Gr))
+    GraphDist = np.empty([FVmesh.nofCells, FVmesh.nofCells])
+    for i in range(FVmesh.nofCells):
+        for j in range(FVmesh.nofCells):
+            GraphDist[i,j] = dist_dict[i][j]
+
+
+    x = np.array(fate(N, G))
+    maxdist = int(np.max(GraphDist))
+    ind = np.where(x==1)[0]
+    dist = GraphDist[ind].T[ind].T
+    rho0 = sum(x)/len(x)
+    rho1 = (sum(x)-1)/(len(x)-1)
+    
+    P = np.empty(maxdist)
+    for i in range(1,maxdist+1):
+        P[i-1] = len(dist[dist==i])/len(GraphDist[GraphDist==i])/rho0/rho1
+        
+    plt.figure()
+    plt.rc('font', size=14)
+    distances = [i for i in range(1,int(np.max(GraphDist))+1)]
+    plt.plot(distances, P)
+    plt.xlabel('Distance')
+    plt.ylabel('$\\rho$')
+
+    return
+
 def saveData(FVmesh, Prm, N, G, folder):
 
     dic = {'x-Position': FVmesh.Pos[:,0], 'y-Position': FVmesh.Pos[:,1],
