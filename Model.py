@@ -31,7 +31,7 @@ def graph_signal(x, FVmesh):
     #q = 1/2
     #scaling = q**(FVmesh.GraphDist)
     #val = x*scaling*(1-q)/q
-    scaling = FVmesh.GraphDist
+    scaling = np.array(FVmesh.GraphDist)
     scaling[scaling > 1] = 0
     val = x*scaling
     np.fill_diagonal(val, 0)

@@ -4,7 +4,7 @@ class Parameters:
     def __init__(self):
         # Energy differences
         self.eps_N = -6
-        self.eps_G = -6.5
+        self.eps_G = -7
         self.eps_S = -2
         self.eps_NS = -2
         #self.eps_S = -3
@@ -20,8 +20,8 @@ class Parameters:
         self.r_G = 10
 
         # Time relevant parameters
-        self.T = 240
-        self.nofSteps = 300
+        self.T = 2400
+        self.nofSteps = 30000
         self.dt = self.T/self.nofSteps
 
         # Signal parameters
