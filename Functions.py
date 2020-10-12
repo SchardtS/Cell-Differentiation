@@ -69,6 +69,20 @@ def distance(pos, *index):
 
     return dist
 
+
+def graph_distance(FVmesh):
+    G = nx.Graph()
+    for path in FVmesh.Tri.simplices:
+        nx.add_path(G, path)
+        
+    dist_dict = dict(nx.all_pairs_dijkstra_path_length(G))
+    GraphDist = np.empty([FVmesh.nofCells, FVmesh.nofCells])
+    for i in range(FVmesh.nofCells):
+        for j in range(FVmesh.nofCells):
+            GraphDist[i,j] = dist_dict[i][j]
+
+    return GraphDist
+
 # Distances of every point x_i to the centre of mass.
 # INPUT: pos - Positional Data [x, y, z], with x = [x_1,...,x_n] etc.
 #        index - Index of wanted position (only if single distances are needed)
@@ -254,7 +268,49 @@ def coverPlot(N, G, nofCalc, FVmesh, folder):
 
     return
 
-def saveData(FVmesh, N, G, folder):
+def paircorrelation(N, G, FVmesh):
+    Gr = nx.Graph()
+    for path in FVmesh.Tri.simplices:
+    
+        path1 = [path[0], path[1]]
+        path2 = [path[1], path[2]]
+        path3 = [path[2], path[0]]
+
+        if FVmesh.Dist[path1[0],path1[1]] < 2.2:
+            nx.add_path(Gr, path1)
+        if FVmesh.Dist[path2[0],path2[1]] < 2.2:    
+            nx.add_path(Gr, path2)
+        if FVmesh.Dist[path3[0],path3[1]] < 2.2:
+            nx.add_path(Gr, path3)
+        
+    dist_dict = dict(nx.all_pairs_dijkstra_path_length(Gr))
+    GraphDist = np.empty([FVmesh.nofCells, FVmesh.nofCells])
+    for i in range(FVmesh.nofCells):
+        for j in range(FVmesh.nofCells):
+            GraphDist[i,j] = dist_dict[i][j]
+
+
+    x = np.array(fate(N, G))
+    maxdist = int(np.max(GraphDist))
+    ind = np.where(x==1)[0]
+    dist = GraphDist[ind].T[ind].T
+    rho0 = sum(x)/len(x)
+    rho1 = (sum(x)-1)/(len(x)-1)
+    
+    P = np.empty(maxdist)
+    for i in range(1,maxdist+1):
+        P[i-1] = len(dist[dist==i])/len(GraphDist[GraphDist==i])/rho0/rho1
+        
+    plt.figure()
+    plt.rc('font', size=14)
+    distances = [i for i in range(1,int(np.max(GraphDist))+1)]
+    plt.plot(distances, P)
+    plt.xlabel('Distance')
+    plt.ylabel('$\\rho$')
+
+    return
+
+def saveData(FVmesh, Prm, N, G, folder):
 
     dic = {'x-Position': FVmesh.Pos[:,0], 'y-Position': FVmesh.Pos[:,1],
          'Radius': FVmesh.Radius, 'NANOG': N, 'GATA6': G}
@@ -271,7 +327,56 @@ def saveData(FVmesh, N, G, folder):
     plt.savefig('Results/'+folder+'/GATA6.png')
     plt.savefig('Results/'+folder+'/GATA6.pdf')
 
+    with open('Results/'+folder+'/Parameters.txt', 'w') as f:
+        print('Energy differences---------------------', file=f)
+        print('eps_N =', Prm.eps_N, file=f)
+        print('eps_G =', Prm.eps_G, file=f)
+        print('eps_S =', Prm.eps_S, file=f)
+        print('eps_NS =', Prm.eps_NS, file=f)
+        print('', file=f)
+
+        print('Reproduction rates---------------------', file=f)
+        print('r_N =', Prm.r_N, file=f)
+        print('r_G =', Prm.r_G, file=f)
+        print('', file=f)
+
+        print('Decay rates----------------------------', file=f)
+        print('gamma_N =', Prm.gamma_N, file=f)
+        print('gamma_G =', Prm.gamma_G, file=f)
+        print('', file=f)
+
+        print('Signal parameters----------------------', file=f)
+        print('signal =', Prm.signal, file=f)
+        if Prm.signal == 'nonlocal':
+            print('D =', Prm.D, file=f)
+
+        print('', file=f)
+
+        print('Numerical parameters-------------------', file=f)
+        print('T', Prm.T, file=f)
+        print('nofSteps =', Prm.nofSteps, file=f)
+        print('dt =', Prm.dt, file=f)
+        print('', file=f)
+ 
+        print('Cell numbers---------------------------', file=f)
+        print('Number of Cells =', FVmesh.nofCells, file=f)
+        print('Number of NANOG Cells =', len(N[N>G]), file=f)
+        print('Number of GATA6 Cells =', len(G[G>N]), file=f)
     return
+
+def loadData(file):
+    Data = pd.read_csv(file)
+    x = Data['x-Position']
+    y = Data['y-Position']
+    Pos = np.empty([len(x), 2])
+    Pos[:,0] = x
+    Pos[:,1] = y
+
+    Radius = Data['Radius']
+    N = Data['NANOG']
+    G = Data['GATA6']
+
+    return Pos, Radius, N, G
 
 def saveOrg(n, Organoid, Prm, folder):
 
@@ -298,6 +403,51 @@ def saveOrg(n, Organoid, Prm, folder):
          'Radius': FVmesh.Radius, 'NANOG': N, 'GATA6': G}
         df = pd.DataFrame(dic)
         df.to_csv('Results/'+folder+'/Data_'+k+'.csv', index = False)
+
+        with open('Results/'+folder+'/Parameters.txt', 'w') as f:
+            print('Energy differences---------------------', file=f)
+            print('eps_N =', Prm.eps_N, file=f)
+            print('eps_G =', Prm.eps_G, file=f)
+            print('eps_S =', Prm.eps_S, file=f)
+            print('eps_NS =', Prm.eps_NS, file=f)
+            print('', file=f)
+
+            print('Reproduction rates---------------------', file=f)
+            print('r_N =', Prm.r_N, file=f)
+            print('r_G =', Prm.r_G, file=f)
+            print('', file=f)
+
+            print('Decay rates----------------------------', file=f)
+            print('gamma_N =', Prm.gamma_N, file=f)
+            print('gamma_G =', Prm.gamma_G, file=f)
+            print('', file=f)
+
+            print('Signal parameters----------------------', file=f)
+            print('signal =', Prm.signal, file=f)
+            if Prm.signal == 'nonlocal':
+                print('D =', Prm.D, file=f)
+
+            print('', file=f)
+
+            print('Numerical parameters-------------------', file=f)
+            print('T', Prm.T, file=f)
+            print('nofSteps =', Prm.nofSteps, file=f)
+            print('dt =', Prm.dt, file=f)
+            print('', file=f)
+
+            print('Growth parameters----------------------', file=f)
+            print('nofCells_start =', Prm.nofCells_start, file=f)
+            print('nofCells_end =', Prm.nofCells_end, file=f)
+            print('r_max =', Prm.rmax, file=f)
+            print('alpha =', Prm.alpha, file=f)
+            print('sigma =', Prm.sigma, file=f)
+            print('F0 =', Prm.F0, file=f)
+            print('', file=f)
+
+            print('Cell numbers---------------------------', file=f)
+            print('Number of Cells =', FVmesh.nofCells, file=f)
+            print('Number of NANOG Cells =', len(N[N>G]), file=f)
+            print('Number of GATA6 Cells =', len(G[G>N]), file=f)
 
     return
 

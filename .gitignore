@@ -172,3 +172,101 @@ Results/Cell Fate - Organoid/Data_7of10.csv
 Results/Cell Fate - Organoid/Data_8of10.csv
 Results/Cell Fate - Organoid/Data_9of10.csv
 Results/Cell Fate - Organoid/Data_10of10.csv
+Results/Cell Fate/Data.csv
+Results/Cell Fate/GATA6.pdf
+Results/Cell Fate/GATA6.png
+Results/Cell Fate/NANOG.pdf
+Results/Cell Fate/NANOG.png
+Results/Cell Fate/Parameters.txt
+Results/Publications/Pattern Formation/Cell Fate - 1 to 2/Data.csv
+Results/Publications/Pattern Formation/Cell Fate - 1 to 2/GATA6.pdf
+Results/Publications/Pattern Formation/Cell Fate - 1 to 2/GATA6.png
+Results/Publications/Pattern Formation/Cell Fate - 1 to 2/NANOG.pdf
+Results/Publications/Pattern Formation/Cell Fate - 1 to 2/NANOG.png
+Results/Publications/Pattern Formation/Cell Fate - 1 to 2/PairCorr.pdf
+Results/Publications/Pattern Formation/Cell Fate - 1 to 2/PairCorr.png
+Results/Publications/Pattern Formation/Cell Fate - 1 to 2 (local)/Data.csv
+Results/Publications/Pattern Formation/Cell Fate - 1 to 2 (local)/GATA6.pdf
+Results/Publications/Pattern Formation/Cell Fate - 1 to 2 (local)/GATA6.png
+Results/Publications/Pattern Formation/Cell Fate - 1 to 2 (local)/NANOG.pdf
+Results/Publications/Pattern Formation/Cell Fate - 1 to 2 (local)/NANOG.png
+Results/Publications/Pattern Formation/Cell Fate - 1 to 2 (local)/PairCorr.pdf
+Results/Publications/Pattern Formation/Cell Fate - 1 to 2 (local)/PairCorr.png
+Results/Publications/Pattern Formation/Cell Fate - 2 to 1/Data.csv
+Results/Publications/Pattern Formation/Cell Fate - 2 to 1/GATA6.pdf
+Results/Publications/Pattern Formation/Cell Fate - 2 to 1/GATA6.png
+Results/Publications/Pattern Formation/Cell Fate - 2 to 1/NANOG.pdf
+Results/Publications/Pattern Formation/Cell Fate - 2 to 1/NANOG.png
+Results/Publications/Pattern Formation/Cell Fate - 2 to 1/PairCorr.pdf
+Results/Publications/Pattern Formation/Cell Fate - 2 to 1/PairCorr.png
+Results/Publications/Pattern Formation/Cell Fate - 2 to 1 (local)/Data.csv
+Results/Publications/Pattern Formation/Cell Fate - 2 to 1 (local)/GATA6.pdf
+Results/Publications/Pattern Formation/Cell Fate - 2 to 1 (local)/GATA6.png
+Results/Publications/Pattern Formation/Cell Fate - 2 to 1 (local)/NANOG.pdf
+Results/Publications/Pattern Formation/Cell Fate - 2 to 1 (local)/NANOG.png
+Results/Publications/Pattern Formation/Cell Fate - 2 to 1 (local)/PairCorr.pdf
+Results/Publications/Pattern Formation/Cell Fate - 2 to 1 (local)/PairCorr.png
+Results/Publications/Pattern Formation/Cell Fate - 85 to 92 (nonlocal, D=10000)/Data.csv
+Results/Publications/Pattern Formation/Cell Fate - 85 to 92 (nonlocal, D=10000)/GATA6.pdf
+Results/Publications/Pattern Formation/Cell Fate - 85 to 92 (nonlocal, D=10000)/GATA6.png
+Results/Publications/Pattern Formation/Cell Fate - 85 to 92 (nonlocal, D=10000)/NANOG.pdf
+Results/Publications/Pattern Formation/Cell Fate - 85 to 92 (nonlocal, D=10000)/NANOG.png
+Results/Publications/Pattern Formation/Cell Fate - 85 to 92 (nonlocal, D=10000)/PairCorr.pdf
+Results/Publications/Pattern Formation/Cell Fate - 85 to 92 (nonlocal, D=10000)/PairCorr.png
+Results/Publications/Pattern Formation/Cell Fate - 85 to 92 (nonlocal, D=10000)/Parameters.txt
+Results/Publications/Pattern Formation/Cell Fate - 89 to 88 (nonlocal, D=1000)/Data.csv
+Results/Publications/Pattern Formation/Cell Fate - 89 to 88 (nonlocal, D=1000)/GATA6.pdf
+Results/Publications/Pattern Formation/Cell Fate - 89 to 88 (nonlocal, D=1000)/GATA6.png
+Results/Publications/Pattern Formation/Cell Fate - 89 to 88 (nonlocal, D=1000)/NANOG.pdf
+Results/Publications/Pattern Formation/Cell Fate - 89 to 88 (nonlocal, D=1000)/NANOG.png
+Results/Publications/Pattern Formation/Cell Fate - 89 to 88 (nonlocal, D=1000)/PairCorr.pdf
+Results/Publications/Pattern Formation/Cell Fate - 89 to 88 (nonlocal, D=1000)/PairCorr.png
+Results/Publications/Pattern Formation/Cell Fate - 89 to 88 (nonlocal, D=1000)/Parameters.txt
+Results/Publications/Pattern Formation/Cell Fate - 91 to 86 (nonlocal, D=100)/Data.csv
+Results/Publications/Pattern Formation/Cell Fate - 91 to 86 (nonlocal, D=100)/GATA6.pdf
+Results/Publications/Pattern Formation/Cell Fate - 91 to 86 (nonlocal, D=100)/GATA6.png
+Results/Publications/Pattern Formation/Cell Fate - 91 to 86 (nonlocal, D=100)/NANOG.pdf
+Results/Publications/Pattern Formation/Cell Fate - 91 to 86 (nonlocal, D=100)/NANOG.png
+Results/Publications/Pattern Formation/Cell Fate - 91 to 86 (nonlocal, D=100)/PairCorr.pdf
+Results/Publications/Pattern Formation/Cell Fate - 91 to 86 (nonlocal, D=100)/PairCorr.png
+Results/Publications/Pattern Formation/Cell Fate - 91 to 86 (nonlocal, D=100)/Parameters.txt
+Results/Publications/Pattern Formation/Cell Fate - 99 to 78/Data.csv
+Results/Publications/Pattern Formation/Cell Fate - 99 to 78/GATA6.pdf
+Results/Publications/Pattern Formation/Cell Fate - 99 to 78/GATA6.png
+Results/Publications/Pattern Formation/Cell Fate - 99 to 78/NANOG.pdf
+Results/Publications/Pattern Formation/Cell Fate - 99 to 78/NANOG.png
+Results/Publications/Pattern Formation/Cell Fate - 99 to 78/PairCorr.pdf
+Results/Publications/Pattern Formation/Cell Fate - 99 to 78/PairCorr.png
+Results/Publications/Pattern Formation/Cell Fate - 99 to 78 (local)/Data.csv
+Results/Publications/Pattern Formation/Cell Fate - 99 to 78 (local)/GATA6.pdf
+Results/Publications/Pattern Formation/Cell Fate - 99 to 78 (local)/GATA6.png
+Results/Publications/Pattern Formation/Cell Fate - 99 to 78 (local)/NANOG.pdf
+Results/Publications/Pattern Formation/Cell Fate - 99 to 78 (local)/NANOG.png
+Results/Publications/Pattern Formation/Cell Fate - 99 to 78 (local)/PairCorr.pdf
+Results/Publications/Pattern Formation/Cell Fate - 99 to 78 (local)/PairCorr.png
+Results/Cell Fate/Data.csv
+Results/Cell Fate/GATA6.pdf
+Results/Cell Fate/GATA6.png
+Results/Cell Fate/NANOG.pdf
+Results/Cell Fate/NANOG.png
+Results/Publications/Pattern Formation/Cell Fate - 1 to 2/Data.csv
+Results/Publications/Pattern Formation/Cell Fate - 1 to 2/GATA6.pdf
+Results/Publications/Pattern Formation/Cell Fate - 1 to 2/GATA6.png
+Results/Publications/Pattern Formation/Cell Fate - 1 to 2/NANOG.pdf
+Results/Publications/Pattern Formation/Cell Fate - 1 to 2/NANOG.png
+Results/Publications/Pattern Formation/Cell Fate - 1 to 2/PairCorr.pdf
+Results/Publications/Pattern Formation/Cell Fate - 1 to 2/PairCorr.png
+Results/Publications/Pattern Formation/Cell Fate - 2 to 1/Data.csv
+Results/Publications/Pattern Formation/Cell Fate - 2 to 1/GATA6.pdf
+Results/Publications/Pattern Formation/Cell Fate - 2 to 1/GATA6.png
+Results/Publications/Pattern Formation/Cell Fate - 2 to 1/NANOG.pdf
+Results/Publications/Pattern Formation/Cell Fate - 2 to 1/NANOG.png
+Results/Publications/Pattern Formation/Cell Fate - 2 to 1/PairCorr.pdf
+Results/Publications/Pattern Formation/Cell Fate - 2 to 1/PairCorr.png
+Results/Publications/Pattern Formation/Cell Fate - 99 to 78/Data.csv
+Results/Publications/Pattern Formation/Cell Fate - 99 to 78/GATA6.pdf
+Results/Publications/Pattern Formation/Cell Fate - 99 to 78/GATA6.png
+Results/Publications/Pattern Formation/Cell Fate - 99 to 78/NANOG.pdf
+Results/Publications/Pattern Formation/Cell Fate - 99 to 78/NANOG.png
+Results/Publications/Pattern Formation/Cell Fate - 99 to 78/PairCorr.pdf
+Results/Publications/Pattern Formation/Cell Fate - 99 to 78/PairCorr.png

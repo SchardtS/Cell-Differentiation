@@ -19,17 +19,17 @@ class Parameters:
         self.r_N = 10
         self.r_G = 10
 
-        # Signal parameters
-        self.range = 10
-        self.D = 1000
-        self.production = 20
-        self.uptake = 1e-3
-        self.signal = 'nonlocal'
-
         # Time relevant parameters
-        self.T = 48
+        self.T = 240
         self.nofSteps = 300
         self.dt = self.T/self.nofSteps
+
+        # Signal parameters
+        self.range = 10
+        self.D = 20 / 25
+        #self.production = 20
+        #self.uptake = 1e-3
+        self.signal = 'nonlocal'
 
         # Newton's method parameters (currently no longer relevant)
         self.Maxit = 20
