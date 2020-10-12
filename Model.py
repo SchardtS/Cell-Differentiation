@@ -14,20 +14,29 @@ import matplotlib.pyplot as plt
 from Functions import dxx, dxx_test
 from numba import jit
 from Functions import Eq2Mat
-from scipy.special import kn
 
-def neighbor_mean(x, FVmesh):
-    nofCells = len(x)
-    suma = np.empty(nofCells)
+def neighbor_signal(x, FVmesh):
+    val = np.empty(FVmesh.nofCells)
 
-    for i in range(nofCells):
+    for i in range(FVmesh.nofCells):
         mean = 0
         for j in FVmesh.Neigh[i]:
             mean += x[j]
         
-        suma[i] = mean/len(FVmesh.Neigh[i])
+        val[i] = mean/len(FVmesh.Neigh[i])
         
-    return suma
+    return val
+
+def graph_signal(x, FVmesh):
+    #q = 1/2
+    #scaling = q**(FVmesh.GraphDist)
+    #val = x*scaling*(1-q)/q
+    scaling = FVmesh.GraphDist
+    scaling[scaling > 1] = 0
+    val = x*scaling
+    np.fill_diagonal(val, 0)
+
+    return np.sum(val, axis=1)/scaling.sum(0)
 
 def relative_distance(v, FVmesh):
     from scipy.spatial.distance import cdist
@@ -76,9 +85,10 @@ def rhs_activation(t, x, Prm, FVmesh):
     d = np.exp(-Prm.eps_NS)
 
     if Prm.signal == 'local':
-        S = neighbor_mean(G,FVmesh)
+        S = neighbor_signal(G,FVmesh)
     elif Prm.signal == 'nonlocal':
-        S = convolute(G,Prm,FVmesh)
+        S = graph_signal(G,FVmesh)
+        #S = convolute(G,Prm,FVmesh)
     elif Prm.signal == 'diffusion':
         S = diffusion(G,Prm,FVmesh)
     else:

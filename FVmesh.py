@@ -6,6 +6,7 @@ from scipy.spatial.distance import cdist
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import matplotlib.cm as cm
+import networkx as nx
 
 class FVmesh:
     '''
@@ -34,6 +35,7 @@ class FVmesh:
         self.Tri = []
         self.Neigh = []
         self.Hull = []
+        self.GraphDist = []
 
     def distances(self):             
         self.Dist = cdist(self.Pos, self.Pos)
@@ -44,6 +46,22 @@ class FVmesh:
             d_mean += sum([self.Dist[i,n]/len(self.Neigh[i])/self.nofCells for n in self.Neigh[i]])
             
         self.D_mean = d_mean
+
+    def remove_edges(self):
+        self.Tri.simplices = self.Tri.simplices[(self.Dist[self.Tri.simplices[:,0],self.Tri.simplices[:,1]] < 2.2) & 
+                                                (self.Dist[self.Tri.simplices[:,1],self.Tri.simplices[:,2]] < 2.2) &
+                                                (self.Dist[self.Tri.simplices[:,0],self.Tri.simplices[:,2]] < 2.2)]
+
+    def graph_distance(self):
+        G = nx.Graph()
+        for path in self.Tri.simplices:
+            nx.add_path(G, path)
+            
+        dist_dict = dict(nx.all_pairs_dijkstra_path_length(G))
+        self.GraphDist = np.empty([self.nofCells, self.nofCells])
+        for i in range(self.nofCells):
+            for j in range(self.nofCells):
+                self.GraphDist[i,j] = dist_dict[i][j]
 
     def polygons(self):
         xmin, xmax = min(self.Pos[:,0]), max(self.Pos[:,0])
@@ -151,12 +169,14 @@ def initializeFVmesh(pos, Radius=None, TE=None, reduced = False):
         self.Vor = Voronoi(self.Pos)
         self.Hull = ConvexHull(self.Pos)
         
-        self.neighbors()
         self.distances()
-        self.mean_distance()
+        self.remove_edges()
+        #self.neighbors()
+        #self.mean_distance()
+        self.graph_distance()
         self.polygons()
         self.volumes()
-        self.edges()
+        #self.edges()
 
     elif reduced == True:
         self = FVmesh()

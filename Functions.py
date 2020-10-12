@@ -69,6 +69,20 @@ def distance(pos, *index):
 
     return dist
 
+
+def graph_distance(FVmesh):
+    G = nx.Graph()
+    for path in FVmesh.Tri.simplices:
+        nx.add_path(G, path)
+        
+    dist_dict = dict(nx.all_pairs_dijkstra_path_length(G))
+    GraphDist = np.empty([FVmesh.nofCells, FVmesh.nofCells])
+    for i in range(FVmesh.nofCells):
+        for j in range(FVmesh.nofCells):
+            GraphDist[i,j] = dist_dict[i][j]
+
+    return GraphDist
+
 # Distances of every point x_i to the centre of mass.
 # INPUT: pos - Positional Data [x, y, z], with x = [x_1,...,x_n] etc.
 #        index - Index of wanted position (only if single distances are needed)
@@ -349,6 +363,20 @@ def saveData(FVmesh, Prm, N, G, folder):
         print('Number of NANOG Cells =', len(N[N>G]), file=f)
         print('Number of GATA6 Cells =', len(G[G>N]), file=f)
     return
+
+def loadData(file):
+    Data = pd.read_csv(file)
+    x = Data['x-Position']
+    y = Data['y-Position']
+    Pos = np.empty([len(x), 2])
+    Pos[:,0] = x
+    Pos[:,1] = y
+
+    Radius = Data['Radius']
+    N = Data['NANOG']
+    G = Data['GATA6']
+
+    return Pos, Radius, N, G
 
 def saveOrg(n, Organoid, Prm, folder):
 

@@ -1,79 +1,86 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from random import gauss
 from FVmesh import initializeFVmesh
 from Organoid2D import initializeOrganoid
-from Functions import coverPlot, saveData
-from Model import rhs_activation
-from Parameters import setParameters
-from scipy.integrate import solve_ivp
-import pandas as pd
+from Functions import loadData, fate
+import networkx as nx
 
-def rho(N,G,FVmesh):
-    cover_N = np.empty(FVmesh.nofCells)
-    cover_G = np.empty(FVmesh.nofCells)
-    radius = max(FVmesh.Dist[FVmesh.Dist < np.inf])/2
+N = np.empty([9,177])
+G = np.empty([9,177])
 
-    for i in range(FVmesh.nofCells):
-            Vi = 0
-            N_cells = 0
-            G_cells = 0
-            for j in range(FVmesh.nofCells):
-                if (np.linalg.norm(FVmesh.Pos[j] - FVmesh.Pos[i])) <= radius:
-                    Vi += 1#FVmesh.Vol[j]
-                    if N[j] > G[j]:
-                        N_cells += 1#*FVmesh.Vol[j]
-                    else:
-                        G_cells += 1#*FVmesh.Vol[j]
-            
-            cover_N[i] = N_cells/Vi
-            cover_G[i] = G_cells/Vi
+Pos, Radius, N[0,:], G[0,:] = loadData('Results/Publications/Pattern Formation/Cell Fate - q=1_10/Data.csv')
+Pos, Radius, N[1,:], G[1,:] = loadData('Results/Publications/Pattern Formation/Cell Fate - q=2_10/Data.csv')
+Pos, Radius, N[2,:], G[2,:] = loadData('Results/Publications/Pattern Formation/Cell Fate - q=3_10/Data.csv')
+Pos, Radius, N[3,:], G[3,:] = loadData('Results/Publications/Pattern Formation/Cell Fate - q=4_10/Data.csv')
+Pos, Radius, N[4,:], G[4,:] = loadData('Results/Publications/Pattern Formation/Cell Fate - q=5_10/Data.csv')
+Pos, Radius, N[5,:], G[5,:] = loadData('Results/Publications/Pattern Formation/Cell Fate - q=6_10/Data.csv')
+Pos, Radius, N[6,:], G[6,:] = loadData('Results/Publications/Pattern Formation/Cell Fate - q=7_10/Data.csv')
+Pos, Radius, N[7,:], G[7,:] = loadData('Results/Publications/Pattern Formation/Cell Fate - q=8_10/Data.csv')
+Pos, Radius, N[8,:], G[8,:] = loadData('Results/Publications/Pattern Formation/Cell Fate - q=9_10/Data.csv')
 
-    rho_N = np.mean(cover_N)
-    rho_G = np.mean(cover_G)
-
-    return rho_N, rho_G
-
-Prm = setParameters()
-Pos = np.array(pd.read_csv('testOrganoid.csv'))
-Radius = np.ones(len(Pos))*1.1
 FVmesh = initializeFVmesh(Pos, Radius=Radius)
+Gr = nx.Graph()
+for path in FVmesh.Tri.simplices:
 
-t = np.linspace(0,Prm.T,Prm.nofSteps)
-xInit = np.array([gauss(0.03,0.001) if i < FVmesh.nofCells else 
-                  gauss(0.03,0.001) for i in range(2*FVmesh.nofCells)])
+    path1 = [path[0], path[1]]
+    path2 = [path[1], path[2]]
+    path3 = [path[2], path[0]]
 
-rangeprm = []
-for i in range(-1,1):
-    for j in range(1,10):
-        rangeprm.append(j*10**i) 
-#rangeprm = np.linspace(0.1,30,100)
-
-rho_N = np.empty(len(rangeprm))
-rho_G = np.empty(len(rangeprm))
-nofN = np.empty(len(rangeprm))
-nofG = np.empty(len(rangeprm))
-for i in range(len(rangeprm)):
-    Prm.range = rangeprm[i]
-    rhs = lambda t,x: rhs_activation(0, x, Prm, FVmesh)
-    sol = solve_ivp(rhs, [0,Prm.T], xInit, t_eval = t, method = 'Radau')
-
-    N = sol.y[:FVmesh.nofCells,-1]
-    G = sol.y[FVmesh.nofCells:,-1]
-
-    rho_N[i], rho_G[i] = rho(N,G,FVmesh)
-    nofN[i] = len(N[N>G])/FVmesh.nofCells
-    nofG[i] = len(G[G>N])/FVmesh.nofCells
+    if FVmesh.Dist[path1[0],path1[1]] < 2.2:
+        nx.add_path(Gr, path1)
+    if FVmesh.Dist[path2[0],path2[1]] < 2.2:    
+        nx.add_path(Gr, path2)
+    if FVmesh.Dist[path3[0],path3[1]] < 2.2:
+        nx.add_path(Gr, path3)
+    
+dist_dict = dict(nx.all_pairs_dijkstra_path_length(Gr))
+GraphDist = np.empty([FVmesh.nofCells, FVmesh.nofCells])
+for i in range(FVmesh.nofCells):
+    for j in range(FVmesh.nofCells):
+        GraphDist[i,j] = dist_dict[i][j]
 
 plt.figure()
-plt.plot(rangeprm, rho_N, lw = 2)
-plt.xlabel(r'$\alpha$')
-plt.ylabel(r'$\rho$')
-#plt.plot(rangeprm, rho_G)
+for i in range(len(N)):
+    x = np.array(fate(N[i,:], G[i,:]))
+    y = np.array(fate(G[i,:], N[i,:]))
+    maxdist = int(np.max(GraphDist))
+    ind = np.where(x==1)[0]
+    dist = GraphDist[ind].T[ind].T
+    rho0 = sum(x)/len(x)
+    rho1 = (sum(x)-1)/(len(x)-1)
+
+    Px = np.empty(maxdist)
+    for k in range(1,maxdist+1):
+        Px[k-1] = len(dist[dist==k])/len(GraphDist[GraphDist==k])/rho0/rho1
+        
+    plt.rc('font', size=14)
+    distances = [j for j in range(1,int(np.max(GraphDist))+1)]
+    plt.plot(distances, Px, lw=2, label='$q = '+str((i+1)/10)+'$')
+    plt.xlabel('Distance')
+    plt.ylabel('$\\rho_n$')
+
+plt.axhline(1, color='k', lw=2, linestyle='--')
+plt.legend(ncol=2)
 
 plt.figure()
-plt.plot(rangeprm, nofN*100, lw = 2)
-#plt.plot(rangeprm, nofG)
-plt.xlabel(r'$\alpha$')
-plt.ylabel('% NANOG Zellen')
+for i in range(len(N)):
+    x = np.array(fate(G[i,:], N[i,:]))
+    maxdist = int(np.max(GraphDist))
+    ind = np.where(x==1)[0]
+    dist = GraphDist[ind].T[ind].T
+    rho0 = sum(x)/len(x)
+    rho1 = (sum(x)-1)/(len(x)-1)
+
+    Px = np.empty(maxdist)
+    for k in range(1,maxdist+1):
+        Px[k-1] = len(dist[dist==k])/len(GraphDist[GraphDist==k])/rho0/rho1
+        
+    plt.rc('font', size=14)
+    distances = [j for j in range(1,int(np.max(GraphDist))+1)]
+    plt.plot(distances, Px, lw=2, label='$q = '+str((i+1)/10)+'$')
+    plt.xlabel('Distance')
+    plt.ylabel('$\\rho_g$')
+
+plt.axhline(1, color='k', lw=2, linestyle='--')
+plt.legend(ncol=2)
 plt.show()

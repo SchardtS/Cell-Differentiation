@@ -12,13 +12,6 @@ import os
 
 Prm = setParameters()
 #Organoid = initializeOrganoid(Prm)
-x = np.linspace(-0.1,0.1,8)
-Pos = np.empty([len(x)**2,2])
-for i in range(len(x)):
-    for j in range(len(x)):
-        Pos[j+i*len(x),0] = x[j]
-        Pos[j+i*len(x),1] = x[i]
-
 Pos = np.array(pd.read_csv('testOrganoid.csv'))
 Radius = np.ones(len(Pos))*1.1
 FVmesh = initializeFVmesh(Pos, Radius=Radius)
@@ -61,6 +54,5 @@ print(Prm.dt*Prm.D)
 plt.figure()
 FVmesh.plot(N)
 paircorrelation(N, G, FVmesh)
-#coverPlot(N, G, 100, FVmesh, 'Cell Fate')
 plt.show()
 saveData(FVmesh, Prm, N, G, 'Cell Fate')
