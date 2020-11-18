@@ -174,8 +174,8 @@ def initializeFVmesh(pos, Radius=None, TE=None, reduced = False):
         #self.neighbors()
         #self.mean_distance()
         self.graph_distance()
-        self.polygons()
-        self.volumes()
+        #self.polygons()
+        #self.volumes()
         #self.edges()
 
     elif reduced == True:

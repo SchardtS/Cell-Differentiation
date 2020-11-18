@@ -2,10 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from FVmesh import initializeFVmesh
 from Organoid2D import initializeOrganoid
-from Functions import loadData, fate
+from Functions import loadData, fate, paircorrelation
 import networkx as nx
 
-N = np.empty([9,177])
+""" N = np.empty([9,177])
 G = np.empty([9,177])
 
 Pos, Radius, N[0,:], G[0,:] = loadData('Results/Publications/Pattern Formation/Cell Fate - q=1_10/Data.csv')
@@ -83,4 +83,54 @@ for i in range(len(N)):
 
 plt.axhline(1, color='k', lw=2, linestyle='--')
 plt.legend(ncol=2)
+plt.show() """
+
+
+Pos_small, Radius, N_small, G_small = loadData('Results/Publications/Pattern Formation/Cell Fate - 23 to 70 q=9_10/Data.csv')
+Pos      , Radius, N,       G       = loadData('Results/Publications/Pattern Formation/Cell Fate - 88 to 89 q=9_10/Data.csv')
+Pos_large, Radius, N_large, G_large = loadData('Results/Publications/Pattern Formation/Cell Fate - 207 to 117 q=9_10/Data.csv')
+
+plt.figure()
+Radius = np.ones(len(Pos_small))*1.1
+FVmesh1 = initializeFVmesh(Pos_small, Radius=Radius)
+FVmesh1.plot(N_small, size=1000/len(Pos_large))
+bmin = min(min(Pos_large[:,0])*1.3,min(Pos_large[:,1])*1.3)
+bmax = max(max(Pos_large[:,0])*1.3,max(Pos_large[:,1])*1.3)
+plt.xlim(bmin, bmax)
+plt.ylim(bmin, bmax)
+#plt.savefig('NANOG_1_10_small.pdf')
+#plt.savefig('NANOG_1_10_small.png')
+
+plt.figure()
+Radius = np.ones(len(Pos))*1.1
+FVmesh2 = initializeFVmesh(Pos, Radius=Radius)
+FVmesh2.plot(N, size=1000/len(Pos_large))
+bmin = min(min(Pos_large[:,0])*1.3,min(Pos_large[:,1])*1.3)
+bmax = max(max(Pos_large[:,0])*1.3,max(Pos_large[:,1])*1.3)
+plt.xlim(bmin, bmax)
+plt.ylim(bmin, bmax)
+#plt.savefig('NANOG_1_10_mid.pdf')
+#plt.savefig('NANOG_1_10_mid.png')
+
+plt.figure()
+Radius = np.ones(len(Pos_large))*1.1
+FVmesh3 = initializeFVmesh(Pos_large, Radius=Radius)
+FVmesh3.plot(N_large, size=1000/len(Pos_large))
+bmin = min(min(Pos_large[:,0])*1.3,min(Pos_large[:,1])*1.3)
+bmax = max(max(Pos_large[:,0])*1.3,max(Pos_large[:,1])*1.3)
+plt.xlim(bmin, bmax)
+plt.ylim(bmin, bmax)
+#plt.savefig('NANOG_1_10_large.pdf')
+#plt.savefig('NANOG_1_10_large.png')
+
+plt.figure()
+paircorrelation(N_large,G_large,FVmesh3)
+paircorrelation(N_small,G_small,FVmesh1,ls='dotted')
+paircorrelation(N,G,FVmesh2,ls='dashed')
+plt.axhline(1, color = 'k', linestyle='dashed', lw=2)
+plt.legend(['NANOG', 'GATA6'])
+plt.savefig('pair_correlation_9_10_size.pdf')
+plt.savefig('pair_correlation_9_10_size.png')
+
+
 plt.show()

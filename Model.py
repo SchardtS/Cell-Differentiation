@@ -27,16 +27,17 @@ def neighbor_signal(x, FVmesh):
         
     return val
 
-def graph_signal(x, FVmesh):
-    #q = 1/2
-    #scaling = q**(FVmesh.GraphDist)
-    #val = x*scaling*(1-q)/q
-    scaling = np.array(FVmesh.GraphDist)
-    scaling[scaling > 1] = 0
-    val = x*scaling
+def graph_signal(x, Prm, FVmesh):
+    q = Prm.range
+    scaling = q**(FVmesh.GraphDist)
+    val = x*scaling*(1-q)/q
+    #scaling = np.array(FVmesh.GraphDist)
+    #scaling[scaling > 1] = 0
+    #val = x*scaling
+    
     np.fill_diagonal(val, 0)
 
-    return np.sum(val, axis=1)/scaling.sum(0)
+    return np.sum(val, axis=1)#/scaling.sum(0)
 
 def relative_distance(v, FVmesh):
     from scipy.spatial.distance import cdist
@@ -87,7 +88,7 @@ def rhs_activation(t, x, Prm, FVmesh):
     if Prm.signal == 'local':
         S = neighbor_signal(G,FVmesh)
     elif Prm.signal == 'nonlocal':
-        S = graph_signal(G,FVmesh)
+        S = graph_signal(G,Prm,FVmesh)
         #S = convolute(G,Prm,FVmesh)
     elif Prm.signal == 'diffusion':
         S = diffusion(G,Prm,FVmesh)

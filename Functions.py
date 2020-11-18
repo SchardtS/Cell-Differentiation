@@ -268,7 +268,7 @@ def coverPlot(N, G, nofCalc, FVmesh, folder):
 
     return
 
-def paircorrelation(N, G, FVmesh):
+def paircorrelation(N, G, FVmesh, ls = 'solid'):
     Gr = nx.Graph()
     for path in FVmesh.Tri.simplices:
     
@@ -297,16 +297,29 @@ def paircorrelation(N, G, FVmesh):
     rho0 = sum(x)/len(x)
     rho1 = (sum(x)-1)/(len(x)-1)
     
-    P = np.empty(maxdist)
+    Px = np.empty(maxdist)
     for i in range(1,maxdist+1):
-        P[i-1] = len(dist[dist==i])/len(GraphDist[GraphDist==i])/rho0/rho1
+        Px[i-1] = len(dist[dist==i])/len(GraphDist[GraphDist==i])/rho0/rho1
+
+    y = np.array(fate(G, N))
+    ind = np.where(y==1)[0]
+    dist = GraphDist[ind].T[ind].T
+    rho0 = sum(y)/len(y)
+    rho1 = (sum(y)-1)/(len(y)-1)
+    
+    Py = np.empty(maxdist)
+    for i in range(1,maxdist+1):
+        Py[i-1] = len(dist[dist==i])/len(GraphDist[GraphDist==i])/rho0/rho1
         
-    plt.figure()
+    #plt.figure()
     plt.rc('font', size=14)
     distances = [i for i in range(1,int(np.max(GraphDist))+1)]
-    plt.plot(distances, P)
+    plt.plot(distances, Px, lw=2, color='m', linestyle = ls)#, label = 'NANOG')
+    plt.plot(distances, Py, lw=2, color='c', linestyle = ls)#, label = 'GATA6')
+
     plt.xlabel('Distance')
     plt.ylabel('$\\rho$')
+    #plt.legend()
 
     return
 
