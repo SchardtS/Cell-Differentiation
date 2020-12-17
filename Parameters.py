@@ -20,8 +20,8 @@ class Parameters:
         self.r_G = 10
 
         # Time relevant parameters
-        self.T = 2400
-        self.nofSteps = 3000
+        self.T = 24
+        self.nofSteps = 30000
         self.dt = self.T/self.nofSteps
 
         # Signal parameters
