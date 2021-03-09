@@ -17,6 +17,7 @@ from scipy.spatial.distance import cdist
 import pandas as pd
 from FVmesh import initializeFVmesh
 from matplotlib.animation import FuncAnimation
+import networkx as nx
 
 
 # Fate assignment function (only valid until a better deciding criterion has been found)
@@ -484,5 +485,112 @@ def saveAnim(Organoid, Prm, folder):
 
     return
 
+# Cutoff distance in experimental data should be fixed to 91
+def graphdistance3D(Pos, cutoff = 91):
+    
+    tri = Delaunay(Pos)
+    Dist = cdist(Pos, Pos)
+    Gr = nx.Graph()
+    n = len(Pos)
+
+    simplices = tri.simplices[(Dist[tri.simplices[:,0],tri.simplices[:,1]] < cutoff) & 
+                              (Dist[tri.simplices[:,0],tri.simplices[:,2]] < cutoff) &
+                              (Dist[tri.simplices[:,0],tri.simplices[:,3]] < cutoff) &
+                              (Dist[tri.simplices[:,1],tri.simplices[:,2]] < cutoff) & 
+                              (Dist[tri.simplices[:,1],tri.simplices[:,3]] < cutoff) &
+                              (Dist[tri.simplices[:,2],tri.simplices[:,3]] < cutoff)]
+
+    for path in simplices:
+        nx.add_path(Gr, path)
+
+    dist_dict = dict(nx.all_pairs_dijkstra_path_length(Gr))
+    dist = np.empty([n, n])
+    for i in range(n):
+        for j in range(n):
+            dist[i,j] = dist_dict[i][j]
 
 
+    return dist
+
+
+
+def loadExpData(ID):
+
+    Data = pd.read_csv('Data/includingSurfaceDistance/extendedRawDataICMOrganoids.csv')
+
+    Organoids = max(Data['OrganoidID'])
+    Dataindex = []
+    Cells = []
+
+    for i in range(len(Data)):
+        if Data['OrganoidID'][i] == ID:
+            Dataindex.append(i)
+
+    x = np.array(Data.loc[Dataindex,'CentroidX'])
+    y = np.array(Data.loc[Dataindex,'CentroidY'])
+    z = np.array(Data.loc[Dataindex,'CentroidZ'])
+    N = np.array(Data.loc[Dataindex,'Nanog-Avg'])
+    G = np.array(Data.loc[Dataindex,'Gata6-Avg'])
+    Stage = np.array(Data.loc[Dataindex,'stage'])
+    Population = np.array(Data.loc[Dataindex,'Population'])
+    Nmax = max(Data.loc[Dataindex,'Nanog-Avg'])
+    Gmax = max(Data.loc[Dataindex,'Gata6-Avg'])
+    Nmin = min(Data.loc[Dataindex,'Nanog-Avg'])
+    Gmin = min(Data.loc[Dataindex,'Gata6-Avg'])
+    print('Organoid', ID, 'is', Stage[0], 'old')
+    print('Organoid', ID, 'consists of', len(Dataindex), 'cells')
+    print('Organoid', ID, 'consists of', len(x[Population=='N+G-']), 'NANOG cells')
+    print('Organoid', ID, 'consists of', len(x[Population=='N-G+']), 'GATA6 cells')
+    print('Organoid', ID, 'has a NANOG:GATA6 ratio of', len(x[Population=='N+G-'])/len(x[Population=='N-G+']))
+
+    Pos = np.empty([len(x), 3])
+    Pos[:,0] = x
+    Pos[:,1] = y
+    Pos[:,2] = z
+    
+    return N, G, Population, Pos
+
+
+def pc_bounds(Pop, GraphDist, N, portion_x = 1):
+    maxdist = int(np.max(GraphDist))
+    x = np.zeros([len(Pop), N])   
+    y = np.zeros([len(Pop), N])
+    x[(Pop == 'N+G-')] = 1
+    x[(Pop == 'N+G+') | (Pop == 'N-G-')] = np.random.random(x[(Pop == 'N+G+') | (Pop == 'N-G-')].shape)    
+    y[(Pop == 'N-G+')] = 1
+    y[(Pop == 'N+G+') | (Pop == 'N-G-')] = np.random.random(x[(Pop == 'N+G+') | (Pop == 'N-G-')].shape)
+    
+    if portion_x == 1:
+        portion_x = len(x[(Pop == 'N-G+')])/len(x[(Pop == 'N-G+') | (Pop == 'N+G-')])
+    portion_y = 1 - portion_x
+        
+    x[x > portion_x] = 1
+    x[x <= portion_x] = 0
+    y[y > portion_y] = 1
+    y[y <= portion_y] = 0
+    
+    cells = x.shape[0]
+    cells_x = np.sum(x, axis=0)
+    cells_y = np.sum(y, axis=0)
+    rho_x = cells_x*(cells_x - 1)/(cells*(cells - 1))
+    rho_y = cells_y*(cells_y - 1)/(cells*(cells - 1))
+
+    Px = np.zeros([maxdist,N])
+    Py = np.zeros([maxdist,N])
+    for j in range(N):
+        ind_x = np.where(x[:,j]==1)[0]
+        pairs_x = GraphDist[ind_x].T[ind_x].T
+        
+        ind_y = np.where(y[:,j]==1)[0]
+        pairs_y = GraphDist[ind_y].T[ind_y].T
+
+        for i in range(1,maxdist+1):
+            Px[i-1,j] = len(pairs_x[pairs_x==i])/len(GraphDist[GraphDist==i])/rho_x[j]
+            Py[i-1,j] = len(pairs_y[pairs_y==i])/len(GraphDist[GraphDist==i])/rho_y[j]
+
+    Px_max = np.max(Px, axis=1)
+    Px_min = np.min(Px, axis=1)    
+    Py_max = np.max(Py, axis=1)
+    Py_min = np.min(Py, axis=1)
+    
+    return Px_min, Px_max, Py_min, Py_max
