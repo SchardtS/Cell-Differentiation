@@ -109,24 +109,32 @@ def rhs_diffusion(t, x, Prm, FVmesh):
     N = x[:nofCells]
     G = x[nofCells:2*nofCells]
     S = x[2*nofCells:]
-    #Dxx = dxx(FVmesh)
-    Dxx = dxx_test(S,FVmesh)
-    Sb = neighbor_mean(S, FVmesh)
+    A = FVmesh.GraphDist
+    #A[A <= 1] = 1
+    #A[A > 1] = 0
+    #q = Prm.range
+    #A = (1-q)/q*q**(FVmesh.GraphDist)
+    #np.fill_diagonal(A, 0)
+    FVmesh.Vol[:] = 1
+    A = dxx(FVmesh)
+    #np.fill_diagonal(A, 0)
+    #Dxx = dxx_test(S,FVmesh)
+    #P = np.exp(-FVmesh.Pos[:,0]**2-FVmesh.Pos[:,1]**2)
 
     a = np.exp(-Prm.eps_N)
     b = np.exp(-Prm.eps_G)
-    c = np.exp(-Prm.eps_Sb)
-    d = np.exp(-Prm.eps_S)
+    c = np.exp(-Prm.eps_S)
 
-    pN = a*N / (1 + a*N + b*G + c*Sb + b*c*G*Sb)
-    pG = b*G*(1 + c*Sb) / (1 + a*N + b*G + c*Sb + b*c*G*Sb)
-    pS = d*S / (1 + d*S + b*G)
+    Sb = S*a*N/(1+a*N)#np.dot(A,S)/6
+
+    pN = a*N / (1 + a*N + b*G*(1 + c*Sb) + c*Sb)
+    pG = b*G*(1 + c*Sb) / (1 + a*N + b*G*(1 + c*Sb) + c*Sb)
+    pS = (1 - pG)
     
-    rhs[:nofCells] = pN - Prm.gamma_N*N
-    rhs[nofCells:2*nofCells] = pG - Prm.gamma_G*G
-    rhs[2*nofCells:] = pS - Prm.gamma_S*S + 0.1*np.dot(Dxx,FVmesh.P)
-
-    return rhs*Prm.relSpeed
+    rhs[:nofCells] = Prm.r_N*pN - Prm.gamma_N*N
+    rhs[nofCells:2*nofCells] = Prm.r_G*pG - Prm.gamma_G*G
+    rhs[2*nofCells:] = Prm.r_S*pS - Prm.gamma_S*S + 0.1*np.dot(A, S)
+    return rhs
 
 
 

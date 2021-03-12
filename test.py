@@ -86,7 +86,7 @@ plt.legend(ncol=2)
 plt.show() """
 
 
-Pos_small, Radius, N_small, G_small = loadData('Results/Publications/Pattern Formation/Cell Fate - 23 to 70 q=9_10/Data.csv')
+""" Pos_small, Radius, N_small, G_small = loadData('Results/Publications/Pattern Formation/Cell Fate - 23 to 70 q=9_10/Data.csv')
 Pos      , Radius, N,       G       = loadData('Results/Publications/Pattern Formation/Cell Fate - 88 to 89 q=9_10/Data.csv')
 Pos_large, Radius, N_large, G_large = loadData('Results/Publications/Pattern Formation/Cell Fate - 207 to 117 q=9_10/Data.csv')
 
@@ -133,4 +133,76 @@ plt.savefig('pair_correlation_9_10_size.pdf')
 plt.savefig('pair_correlation_9_10_size.png')
 
 
+plt.show() """
+
+import numpy as np
+import matplotlib.pyplot as plt
+from FVmesh import initializeFVmesh
+from Organoid2D import initializeOrganoid
+from Functions import coverPlot, saveData, paircorrelation
+from Model import rhs_diffusion
+from Parameters import setParameters
+from scipy.integrate import solve_ivp
+import pandas as pd
+
+Prm = setParameters()
+Prm.eps_N = -6.25
+Prm.eps_G = -6
+Prm.eps_S = -2
+Prm.range = 0.9
+Pos = np.array(pd.read_csv('testOrganoid.csv'))
+Radius = np.ones(len(Pos))*1.1
+FVmesh = initializeFVmesh(Pos, Radius=Radius)
+plt.hist(FVmesh.Vol, 20, edgecolor='black')
 plt.show()
+
+t = np.linspace(0,Prm.T,Prm.nofSteps)
+
+x0 = [Prm.r_N/Prm.gamma_N*3/4, Prm.r_G/Prm.gamma_G*3/4, Prm.r_S/Prm.gamma_S*3/4]
+xInit = np.random.normal(x0[0], x0[0]*0.01, 3*FVmesh.nofCells)
+
+rhs = lambda t,x: rhs_diffusion(0, x, Prm, FVmesh)
+sol = solve_ivp(rhs, [0,Prm.T], xInit, t_eval = t, method = 'Radau')
+
+N = sol.y[:FVmesh.nofCells,-1]
+G = sol.y[FVmesh.nofCells:2*FVmesh.nofCells,-1]
+S = sol.y[2*FVmesh.nofCells:,-1]
+
+plt.figure()
+for i in range(FVmesh.nofCells):
+     plt.plot(t, sol.y[i,:])
+
+plt.title('NANOG')
+plt.xlabel('Time')
+plt.ylabel('Concentrations')
+
+
+plt.figure()
+for i in range(FVmesh.nofCells):
+    plt.plot(t, sol.y[i+FVmesh.nofCells,:])
+
+plt.title('GATA6')
+plt.xlabel('Time')
+plt.ylabel('Concentrations')
+
+plt.figure()
+for i in range(FVmesh.nofCells):
+    plt.plot(t, sol.y[i+2*FVmesh.nofCells,:])
+
+plt.title('SIGNAL')
+plt.xlabel('Time')
+plt.ylabel('Concentrations')
+
+print('Number of Cells =', FVmesh.nofCells)
+print('Number of NANOG Cells =', len(N[N>G]))
+print('Number of GATA6 Cells =', len(G[G>N]))
+print(Prm.dt*Prm.D)
+
+plt.figure()
+FVmesh.plot(N)
+plt.show()
+
+
+Prm.eps_N = -8
+Prm.eps_G = -6
+Prm.eps_S = -2

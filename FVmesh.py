@@ -170,14 +170,14 @@ def initializeFVmesh(pos, Radius=None, TE=None, reduced = False):
         self.Hull = ConvexHull(self.Pos)
         
         self.distances()
-        self.remove_edges()
-        #self.neighbors()
+        #self.remove_edges()
+        self.neighbors()
         #self.mean_distance()
         self.graph_distance()
-        #self.polygons()
-        #self.volumes()
-        #self.edges()
-
+        self.polygons()
+        self.volumes()
+        self.edges()
+        
     elif reduced == True:
         self = FVmesh()
         self.__init__()

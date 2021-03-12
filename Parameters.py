@@ -18,6 +18,7 @@ class Parameters:
         # Reproduction rates
         self.r_N = 10
         self.r_G = 10
+        self.r_S = 10
 
         # Time relevant parameters
         self.T = 24
