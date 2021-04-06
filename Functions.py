@@ -402,7 +402,7 @@ def saveOrg(n, Organoid, Prm, folder):
         G = Organoid.Data[index][4]
         Pos = Organoid.Data[index][1]
         Rad = Organoid.Data[index][2]
-        FVmesh = initializeFVmesh(Pos, Radius = Rad)
+        FVmesh = initializeFVmesh(Pos, Radius = np.ones(len(Rad))*.8)
         FVmesh.plot(N, size=1000/len(Organoid.IDs), bounds=[min(Organoid.NANOG),max(Organoid.NANOG)])
         bmin = min(min(Organoid.Pos[:,0])*1.3,min(Organoid.Pos[:,1])*1.3)
         bmax = max(max(Organoid.Pos[:,0])*1.3,max(Organoid.Pos[:,1])*1.3)
@@ -410,7 +410,7 @@ def saveOrg(n, Organoid, Prm, folder):
         plt.ylim(bmin, bmax)
 
         k = str(j)+'of'+str(n)
-        plt.savefig('Results/'+folder+'/NANOG_'+k+'.png')
+        plt.savefig('Results/'+folder+'/NANOG_'+k+'.png', transparent = True)
         plt.savefig('Results/'+folder+'/NANOG_'+k+'.pdf')
 
         dic = {'x-Position': FVmesh.Pos[:,0], 'y-Position': FVmesh.Pos[:,1],
@@ -470,8 +470,9 @@ def saveAnim(Organoid, Prm, folder):
 
     def update(i):
         Pos = Organoid.Data[i][1]
+        Radius = Organoid.Data[i][2]
         NANOG = Organoid.Data[i][3]
-        FVmesh = initializeFVmesh(Pos)
+        FVmesh = initializeFVmesh(Pos, Radius = np.ones(len(Radius))*.8)
         plt.cla()
         FVmesh.plot(NANOG, size=1000/len(Organoid.IDs), bounds=[min(Organoid.NANOG),max(Organoid.NANOG)])
         bmin = min(min(Organoid.Pos[:,0])*1.3,min(Organoid.Pos[:,1])*1.3)

@@ -267,7 +267,7 @@ class Organoid:
         return
 
     def transcription(self, Prm):
-        FVmesh = initializeFVmesh(self.Pos, reduced=True)
+        FVmesh = initializeFVmesh(self.Pos, reduced=True, Radius=self.Radius)
         x = np.append(self.NANOG, self.GATA6)
         rhs = rhs_activation(self.t, x, Prm, FVmesh)
 

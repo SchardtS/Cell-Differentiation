@@ -48,10 +48,18 @@ class FVmesh:
         self.D_mean = d_mean
 
     def remove_edges(self):
-        self.Tri.simplices = self.Tri.simplices[(self.Dist[self.Tri.simplices[:,0],self.Tri.simplices[:,1]] < 2.2) & 
-                                                (self.Dist[self.Tri.simplices[:,1],self.Tri.simplices[:,2]] < 2.2) &
-                                                (self.Dist[self.Tri.simplices[:,0],self.Tri.simplices[:,2]] < 2.2)]
+        simplex_distance1 = self.Dist[self.Tri.simplices[:,0],self.Tri.simplices[:,1]]
+        simplex_distance2 = self.Dist[self.Tri.simplices[:,1],self.Tri.simplices[:,2]]
+        simplex_distance3 = self.Dist[self.Tri.simplices[:,0],self.Tri.simplices[:,2]]
 
+        simplex_radii1 = self.Radius[self.Tri.simplices[:,0]]+self.Radius[self.Tri.simplices[:,1]]
+        simplex_radii2 = self.Radius[self.Tri.simplices[:,1]]+self.Radius[self.Tri.simplices[:,2]]
+        simplex_radii3 = self.Radius[self.Tri.simplices[:,0]]+self.Radius[self.Tri.simplices[:,2]]
+
+        self.Tri.simplices = self.Tri.simplices[(simplex_distance1 < simplex_radii1) & 
+                                                (simplex_distance2 < simplex_radii2) &
+                                                (simplex_distance3 < simplex_radii3)]
+                                                
     def graph_distance(self):
         G = nx.Graph()
         for path in self.Tri.simplices:
@@ -92,6 +100,32 @@ class FVmesh:
         
         self.Poly = polylist
         
+    def polygons_new(self):
+        polylist = []
+        for i in range(self.nofCells):
+            cell1 = Point(self.Pos[i,:]).buffer(self.Radius[i])
+            for j in self.Neigh[i]:
+                cell2 = Point(self.Pos[j,:]).buffer(self.Radius[j])
+                poly = cell1.intersection(cell2)
+
+                d = np.linalg.norm(self.Pos[i,:]-self.Pos[j,:])
+                a = (self.Radius[i]**2 - self.Radius[j]**2 + d**2)/(2*d)
+                d12 = self.Pos[j,:] - self.Pos[i,:]
+                d12_orth = np.array([d12[1],-d12[0]])
+                sq1 = self.Pos[i,:] + d12/d*a + d12_orth/d*self.Radius[i]
+                sq2 = self.Pos[i,:] - d12/d*self.Radius[i] + d12_orth/d*self.Radius[i]
+                sq3 = self.Pos[i,:] - d12/d*self.Radius[i] - d12_orth/d*self.Radius[i]
+                sq4 = self.Pos[i,:] + d12/d*a - d12_orth/d*self.Radius[i]
+
+                square = np.array([sq1,sq2,sq3,sq4])
+                square = Polygon(square)
+
+                cell1 = cell1.intersection(square)
+
+            polylist.append(cell1)
+
+        self.Poly = polylist
+        
     def volumes(self):
         vol = np.empty(self.nofCells)
         for i in range(self.nofCells):
@@ -127,7 +161,7 @@ class FVmesh:
                 if self.Poly[i].is_empty:
                     continue
                 x,y = self.Poly[i].exterior.xy
-                plt.plot(x,y, 'k', alpha = 0.8)
+                plt.plot(x,y, 'k', alpha = 1) #0.8
 
             plt.scatter(self.Pos[:,0],self.Pos[:,1], color = 'k', alpha=1, s=size)
             if type(self.TE) != type(None):
@@ -146,15 +180,19 @@ class FVmesh:
                 if self.Poly[i].is_empty:
                     continue
                 x,y = self.Poly[i].exterior.xy
-                plt.fill(x,y, facecolor=mapper.to_rgba(float(Val[i])), edgecolor='k', alpha = 0.8, linewidth=1)
+                plt.fill(x,y, facecolor=mapper.to_rgba(float(Val[i])), edgecolor='k', alpha = 1, linewidth=1)
 
             plt.scatter(self.Pos[:,0],self.Pos[:,1], color = 'k', alpha=1, s=size)
             if type(self.TE) != type(None):
-                plt.plot(self.TE[:,0], self.TE[:,1], color = 'r', lw = 2, alpha=0.8)
+                plt.plot(self.TE[:,0], self.TE[:,1], color = 'r', lw = 2, alpha=1)
 
         #plt.axes().set_aspect('equal')
         plt.axis('off')
         #plt.show()
+
+    def radius_distance(self):
+        self.GraphDist = np.floor(self.Dist/np.mean(self.Radius))
+        
     
 def initializeFVmesh(pos, Radius=None, TE=None, reduced = False):
 
@@ -167,26 +205,30 @@ def initializeFVmesh(pos, Radius=None, TE=None, reduced = False):
         self.nofCells = len(self.Pos)
         self.Tri = Delaunay(self.Pos)
         self.Vor = Voronoi(self.Pos)
-        self.Hull = ConvexHull(self.Pos)
+        #self.Hull = ConvexHull(self.Pos)
         
         self.distances()
         #self.remove_edges()
         self.neighbors()
         #self.mean_distance()
-        self.graph_distance()
-        self.polygons()
-        self.volumes()
-        self.edges()
+        #self.graph_distance()
+        #self.polygons()
+        self.polygons_new()
+        #self.volumes()
+        #self.edges()
         
     elif reduced == True:
         self = FVmesh()
         self.__init__()
         self.Pos = pos
+        self.Radius = Radius
         self.nofCells = len(self.Pos)
-        self.Tri = Delaunay(self.Pos)
-        
-        self.neighbors()
         self.distances()
+        self.radius_distance()
+
+        #self.Tri = Delaunay(self.Pos)
+        #self.neighbors()
+        #self.distances()
 
     else:
         print('Error: reduced =', str(reduced),'not supported!')
