@@ -202,6 +202,8 @@ class Organoid:
         IDs = self.IDs
 
         for i in range(len(IDs)):
+            if len(self.Pos) >= self.CellMax:
+                break
             radius = self.Radius[i]
             if radius < 0.9:
                 continue
@@ -286,10 +288,11 @@ class Organoid:
         self.Data.append([IDs,Pos,Radius,NANOG,GATA6])
         return
 
-def initializeOrganoid(Prm, TE=None, Transcription = True):
+def initializeOrganoid(Prm, TE=None, Transcription = True, CellMax = 10000):
 
     self = Organoid()
     self.__init__()
+    self.CellMax = CellMax
     self.TE = TE
     self.t = 0
     self.k = GrowthRate(Prm)
@@ -298,6 +301,8 @@ def initializeOrganoid(Prm, TE=None, Transcription = True):
     self.dataCollecting()
     self.cellDivision(Prm)
     for step in range(1, Prm.nofSteps+1):
+        if len(self.Pos) >= self.CellMax:
+            break
         self.t = step*Prm.dt
         self.radiusGrowth(Prm)
         self.cellDivision(Prm)

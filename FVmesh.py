@@ -136,8 +136,9 @@ class FVmesh:
     def neighbors(self):
         neigh = [0]*self.nofCells
         for i in range(self.nofCells):
-            neigh[i] = self.Tri.vertex_neighbor_vertices[1][self.Tri.vertex_neighbor_vertices[0][i]:self.Tri.vertex_neighbor_vertices[0][i+1]]
-                
+            all_neigh = self.Tri.vertex_neighbor_vertices[1][self.Tri.vertex_neighbor_vertices[0][i]:self.Tri.vertex_neighbor_vertices[0][i+1]]
+            neigh[i] = [j for j in all_neigh if self.Dist[i,j] < self.Radius[i] + self.Radius[j]]
+
         self.Neigh = neigh
         
     def edges(self):
@@ -209,11 +210,11 @@ def initializeFVmesh(pos, Radius=None, TE=None, reduced = False):
         
         self.distances()
         #self.remove_edges()
-        self.neighbors()
+        #self.neighbors()
         #self.mean_distance()
-        #self.graph_distance()
+        self.graph_distance()
         #self.polygons()
-        self.polygons_new()
+        #self.polygons_new()
         #self.volumes()
         #self.edges()
         

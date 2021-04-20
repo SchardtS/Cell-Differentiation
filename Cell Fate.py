@@ -11,7 +11,7 @@ import pandas as pd
 Prm = setParameters()
 #Organoid = initializeOrganoid(Prm, Transcription=False)
 #Pos = Organoid.Pos
-Pos = np.array(pd.read_csv('testOrganoid_small.csv'))
+Pos = np.array(pd.read_csv('testOrganoid.csv'))
 Radius = np.ones(len(Pos))*1.1
 FVmesh = initializeFVmesh(Pos, Radius=Radius)
 
@@ -46,14 +46,11 @@ plt.ylabel('Concentrations')
 print('Number of Cells =', FVmesh.nofCells)
 print('Number of NANOG Cells =', len(N[N>G]))
 print('Number of GATA6 Cells =', len(G[G>N]))
-D = Prm.D*25/3600
-print('Diffusivity =', D)
-print(Prm.dt*Prm.D)
 
 plt.figure()
 FVmesh.plot(N)
 plt.figure()
-paircorrelation(N, G, FVmesh)
+#paircorrelation(N, G, FVmesh)
 plt.show()
 saveData(FVmesh, Prm, N, G, 'Cell Fate')
-print(10*(np.exp(Prm.eps_G-Prm.eps_N)-1)/np.exp(Prm.eps_NS + Prm.eps_NS), len(N[N>G])/len(N), len(G[G>N])/len(N))
+print(10*(np.exp(-Prm.eps_G+Prm.eps_N)-1)/np.exp(-Prm.eps_NS - Prm.eps_NS), len(N[N>G])/len(N), len(G[G>N])/len(N))

@@ -4,7 +4,7 @@ class Parameters:
     def __init__(self):
         # Energy differences
         self.eps_N = -6
-        self.eps_G = -9
+        self.eps_G = -7
         self.eps_S = -2
         self.eps_NS = -2
         #self.eps_S = -3
