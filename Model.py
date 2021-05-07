@@ -33,7 +33,7 @@ def graph_signal(x, Prm, FVmesh):
     val = x*scaling*(1-q)/q
     #scaling = np.array(FVmesh.GraphDist)
     #scaling[scaling > 1] = 0
-    val = x*scaling
+    #val = x*scaling
     
     np.fill_diagonal(val, 0)
 

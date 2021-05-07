@@ -209,11 +209,11 @@ def initializeFVmesh(pos, Radius=None, TE=None, reduced = False):
         #self.Hull = ConvexHull(self.Pos)
         
         self.distances()
-        #self.remove_edges()
+        self.remove_edges()
         #self.neighbors()
         #self.mean_distance()
         self.graph_distance()
-        #self.polygons()
+        self.polygons()
         #self.polygons_new()
         #self.volumes()
         #self.edges()
