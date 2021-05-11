@@ -8,8 +8,8 @@ org = Organoid()
 org.evolution(T=20)
 
 # Plot the result
-#org.cellPlot()
-#plt.show()
+org.cellPlot()
+plt.show()
 
 org.saveData(directory='Results/Cell Fate/')
-org.saveAnim(directory='Results/Cell Fate/')
+#org.saveAnim(directory='Results/Cell Fate/')
