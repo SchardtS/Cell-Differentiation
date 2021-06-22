@@ -8,6 +8,10 @@ import matplotlib.cm as cm
 from Parameters_new import Parameters
 from matplotlib.animation import FuncAnimation
 
+import networkx as nx
+from scipy.spatial import Delaunay
+
+
 class Organoid(Parameters):
     def __init__(self):
         Parameters.__init__(self)
@@ -119,7 +123,7 @@ class Organoid(Parameters):
         y_pairwise = y - y[:,None]
 
         # Absolute values of forces according to Morse potential
-        F = self.F0*2*self.alpha*(np.exp(-2*self.alpha*(self.dist-r_pairwise*self.sigma)) - np.exp(-self.alpha*(self.dist-r_pairwise*self.sigma)))
+        F = self.F0*2*self.alpha*(np.exp(-self.alpha*(self.dist-r_pairwise*self.sigma)) - np.exp(-2*self.alpha*(self.dist-r_pairwise*self.sigma)))
         F[self.dist > r_pairwise] = 0
 
         # Fill distance matrix with inf on diagonal
@@ -133,33 +137,34 @@ class Organoid(Parameters):
         # Sum of all forces acting on each cell as a vector
         Force = np.array([np.sum(Fx, axis=1), np.sum(Fy, axis=1)]).T
         
-        self.xy = self.xy - self.dt*Force
+        self.xy = self.xy + self.dt*Force# + 0.1*np.random.normal(0, self.dt**(1/2), self.xy.shape)
         
     def graphdistance(self):
-        #Gr = nx.Graph()
-        #tri = Delaunay(self.xy)
+        Gr = nx.Graph()
+        tri = Delaunay(self.xy)
                                
-        #simplex_distance1 = self.dist[tri.simplices[:,0], tri.simplices[:,1]]
-        #simplex_distance2 = self.dist[tri.simplices[:,1], tri.simplices[:,2]]
-        #simplex_distance3 = self.dist[tri.simplices[:,0], tri.simplices[:,2]]
+        simplex_distance1 = self.dist[tri.simplices[:,0], tri.simplices[:,1]]
+        simplex_distance2 = self.dist[tri.simplices[:,1], tri.simplices[:,2]]
+        simplex_distance3 = self.dist[tri.simplices[:,0], tri.simplices[:,2]]
 
-        #simplex_radii1 = self.r[tri.simplices[:,0]]+self.r[tri.simplices[:,1]]
-        #simplex_radii2 = self.r[tri.simplices[:,1]]+self.r[tri.simplices[:,2]]
-        #simplex_radii3 = self.r[tri.simplices[:,0]]+self.r[tri.simplices[:,2]]
+        simplex_radii1 = self.r[tri.simplices[:,0]]+self.r[tri.simplices[:,1]]
+        simplex_radii2 = self.r[tri.simplices[:,1]]+self.r[tri.simplices[:,2]]
+        simplex_radii3 = self.r[tri.simplices[:,0]]+self.r[tri.simplices[:,2]]
 
-        #simplices = tri.simplices[(simplex_distance1 < simplex_radii1*1.1) & 
-        #                          (simplex_distance2 < simplex_radii2*1.1) &
-        #                          (simplex_distance3 < simplex_radii3*1.1)]
+        simplices = tri.simplices[(simplex_distance1 < simplex_radii1*1.1) & 
+                                  (simplex_distance2 < simplex_radii2*1.1) &
+                                  (simplex_distance3 < simplex_radii3*1.1)]
 
-        #for path in simplices:
-        #    nx.add_path(Gr, path)
+        for path in simplices:
+            nx.add_path(Gr, path)
 
-        #dist_dict = dict(nx.all_pairs_dijkstra_path_length(Gr))
-        #self.GraphDist = np.empty([self.nofCells, self.nofCells])
-        #for i in range(self.nofCells):
-        #    for j in range(self.nofCells):
-        #        self.GraphDist[i,j] = dist_dict[i][j]
-        self.GraphDist = np.floor(self.dist/np.mean(2*self.r))
+        dist_dict = dict(nx.all_pairs_dijkstra_path_length(Gr))
+        self.GraphDist = np.empty([self.nofCells, self.nofCells])
+        for i in range(self.nofCells):
+            for j in range(self.nofCells):
+                self.GraphDist[i,j] = dist_dict[i][j]
+
+        #self.GraphDist = np.floor(self.dist/np.mean(2*self.r))
   
     def transcription(self):
         rhs = np.empty(self.nofCells*2)
@@ -168,12 +173,13 @@ class Organoid(Parameters):
         b = np.exp(-self.eps_G)
         c = np.exp(-self.eps_S)
         d = np.exp(-self.eps_NS)
-                               
-        scaling = self.q**(self.GraphDist-1)
+
+        d_ij = np.maximum(self.GraphDist-1, 0)         
+        scaling = self.q**(d_ij)
         np.fill_diagonal(scaling, 0)
         val = self.G*scaling#*(1-self.q)/self.q
         np.fill_diagonal(val, 0)
-        self.S = np.sum(val, axis=1)/max(scaling.sum(1))
+        self.S = val.sum(1)/max(scaling.sum(1))
 
         pN = (a*self.N)*(1+d*c*self.S)/(1 + a*self.N*(1+d*c*self.S) + b*self.G + c*self.S)
         pG =        (b*self.G)        /(1 + a*self.N*(1+d*c*self.S) + b*self.G + c*self.S)
@@ -276,26 +282,35 @@ class Organoid(Parameters):
         df['GATA6'] = self.G
         df.to_csv(directory + 'Data.csv', index = False)
 
-    def saveAnim(self, directory = ''):
-        fig, ax = plt.subplots()
+    def saveAnim(self, directory = '', frames = None, fps = 60):
+
+        fig = plt.figure()
+        bmin = min(min(self.xy[:,0]),min(self.xy[:,1])) - 3.5*self.r_max
+        bmax = max(max(self.xy[:,0]),max(self.xy[:,1])) + 3.5*self.r_max
+
 
         def update(i):
+            plt.cla()
+
             org = Organoid()
             org.nofCells = len(self.Data[i][0])
             org.xy = self.Data[i][0]
             org.r = self.Data[i][1]
             org.N = self.Data[i][2]
             org.dist = cdist(org.xy, org.xy)
-            plt.cla()
-            org.cellPlot(org.N, size=1000/self.nofCells, bounds=[min(org.N),max(org.N)])
-            bmin = min(min(self.xy[:,0]),min(self.xy[:,1])) - self.r_max
-            bmax = max(max(self.xy[:,0]),max(self.xy[:,1])) + self.r_max
+
+            org.cellPlot(org.N, size=1000/self.nofCells, bounds=[min(self.N),max(self.N)])
             plt.xlim(bmin, bmax)
             plt.ylim(bmin, bmax)
             return
 
-        ani = FuncAnimation(fig, update, frames=len(self.Data), interval=1, blit=False)
-        ani.save(directory + '/NANOG.mp4', fps=70, dpi=400)
+        if frames == None:
+            frames = len(self.Data)
+        else:
+            frames = np.unique(np.linspace(0, len(self.Data)-1, frames, dtype=int))
+
+        ani = FuncAnimation(fig, update, frames=frames)
+        ani.save(directory + '/NANOG.mp4', fps=fps, dpi=200, savefig_kwargs={'transparent': True, 'facecolor': 'none'})
 
         return
 

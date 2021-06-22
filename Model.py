@@ -29,15 +29,16 @@ def neighbor_signal(x, FVmesh):
 
 def graph_signal(x, Prm, FVmesh):
     q = Prm.range
-    scaling = q**(FVmesh.GraphDist)
-    val = x*scaling*(1-q)/q
+    scaling = q**(np.maximum(FVmesh.GraphDist-1, 0))
+    np.fill_diagonal(scaling, 0)
+    val = x*scaling#*(1-q)/q
     #scaling = np.array(FVmesh.GraphDist)
     #scaling[scaling > 1] = 0
     #val = x*scaling
     
     np.fill_diagonal(val, 0)
 
-    return np.sum(val, axis=1)#/scaling.sum(0)
+    return np.sum(val, axis=1)/scaling.sum(1)#/max(scaling.sum(1))
 
 def relative_distance(v, FVmesh):
     from scipy.spatial.distance import cdist

@@ -30,4 +30,4 @@ class Parameters:
         self.r_S = 10
         
         # signal range
-        self.q = 0.5
+        self.q = 0.0

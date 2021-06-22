@@ -5,11 +5,11 @@ import matplotlib.pyplot as plt
 org = Organoid()
 
 # Run simulation for specified amount of time. If not specified its 24 hours
-org.evolution(T=20)
+org.evolution(T=20, file = 'Organoid_mid.csv', mode='transcription')
 
 # Plot the result
-org.cellPlot()
+org.cellPlot(org.N)
 plt.show()
 
-org.saveData(directory='Results/Cell Fate/')
-#org.saveAnim(directory='Results/Cell Fate/')
+#org.saveData(directory='Results/Cell Fate/')
+#org.saveAnim(directory='Results/Cell Fate/', frames=200, fps=30)
