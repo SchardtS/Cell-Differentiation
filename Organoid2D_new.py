@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -7,9 +8,9 @@ import matplotlib as mpl
 import matplotlib.cm as cm
 from Parameters_new import Parameters
 from matplotlib.animation import FuncAnimation
-
 import networkx as nx
 from scipy.spatial import Delaunay
+import itertools
 
 
 class Organoid(Parameters):
@@ -21,10 +22,12 @@ class Organoid(Parameters):
             self.xy = np.array([[-0.5,-0.5], [0.5,-0.5], [0,0.5]])
             self.r = np.array([0.8, 0.9, 0.75])
             
-            
         else:
             Data = pd.read_csv(file)
-            self.xy = Data[['x-Position','y-Position']].to_numpy()
+            if 'z-Position' in Data:
+                self.xy = Data[['x-Position','y-Position','z-Position']].to_numpy()
+            else:
+                self.xy = Data[['x-Position','y-Position']].to_numpy()
             self.r = Data['Radius'].to_numpy()
 
         self.nofCells = len(self.r)
@@ -114,6 +117,7 @@ class Organoid(Parameters):
 
     def displacement(self):
         self.dist = cdist(self.xy, self.xy)
+
         x = self.xy[:,0]
         y = self.xy[:,1]
 
@@ -141,29 +145,21 @@ class Organoid(Parameters):
         
     def graphdistance(self):
         Gr = nx.Graph()
+        self.dist = cdist(self.xy, self.xy)
+        rr = self.r + self.r[:,None]
         tri = Delaunay(self.xy)
                                
-        simplex_distance1 = self.dist[tri.simplices[:,0], tri.simplices[:,1]]
-        simplex_distance2 = self.dist[tri.simplices[:,1], tri.simplices[:,2]]
-        simplex_distance3 = self.dist[tri.simplices[:,0], tri.simplices[:,2]]
-
-        simplex_radii1 = self.r[tri.simplices[:,0]]+self.r[tri.simplices[:,1]]
-        simplex_radii2 = self.r[tri.simplices[:,1]]+self.r[tri.simplices[:,2]]
-        simplex_radii3 = self.r[tri.simplices[:,0]]+self.r[tri.simplices[:,2]]
-
-        simplices = tri.simplices[(simplex_distance1 < simplex_radii1*1.1) & 
-                                  (simplex_distance2 < simplex_radii2*1.1) &
-                                  (simplex_distance3 < simplex_radii3*1.1)]
-
-        for path in simplices:
-            nx.add_path(Gr, path)
+        for nodes in tri.simplices:
+            for path in list(itertools.combinations(nodes, 2)):
+                if self.dist[path[0],path[1]] < rr[path[0],path[1]]:
+                    nx.add_path(Gr, path)
 
         dist_dict = dict(nx.all_pairs_dijkstra_path_length(Gr))
         self.GraphDist = np.empty([self.nofCells, self.nofCells])
         for i in range(self.nofCells):
             for j in range(self.nofCells):
                 self.GraphDist[i,j] = dist_dict[i][j]
-
+ 
         #self.GraphDist = np.floor(self.dist/np.mean(2*self.r))
   
     def transcription(self):
@@ -191,7 +187,7 @@ class Organoid(Parameters):
         self.N = self.u[:self.nofCells]
         self.G = self.u[self.nofCells:]
                                       
-    def cellPlot(self, *Val, size = None, bounds = None):        
+    def cellPlot(self, *Val, size = None, bounds = None):
         if size == None:
             size = 1000/len(self.xy)
         
@@ -241,39 +237,98 @@ class Organoid(Parameters):
             for i in range(self.nofCells):
                 x,y = polygons[i].exterior.xy
                 plt.fill(x,y, facecolor=mapper.to_rgba(float(Val[i])), edgecolor='k', linewidth=1, zorder=1)
-          
+        
         #### plot cell nuclei ####
         plt.scatter(self.xy[:,0],self.xy[:,1], color='k', s=size, zorder=2)
         plt.axis('equal')
         plt.axis('off')
+
+    def timePlot(self):
+
+        plt.figure()
+        for i in range(self.nofCells):
+            t = []
+            NANOG = []
+            for k in range(int(self.T/self.dt)):
+                if len(self.Data[k][2])-1 >= i:
+                    NANOG.append(self.Data[k][2][i])
+                    t.append(k*self.dt)
+            plt.plot(t, NANOG)
+
+        plt.title('NANOG')
+        plt.xlabel('Time')
+        plt.ylabel('Concentrations')
+
+    def pcf(self, ls = 'solid', lw = 2, legend = True):
+        x = np.zeros(self.nofCells)
+        x[self.N > self.G] = 1
+        maxdist = int(np.max(self.GraphDist))
+        ind_N = np.where(x==1)[0]
+        ind_G = np.where(x==0)[0]
+        if ind_N.size == 0:
+            PN = np.empty(maxdist)
+            for i in range(1,maxdist+1):
+                PN[i-1] = 0
+        if ind_G.size == 0:
+            PG = np.empty(maxdist)
+            for i in range(1,maxdist+1):
+                PG[i-1] = 0
+                
+        else:
+            dist_N = self.GraphDist[ind_N].T[ind_N].T
+            rho_N = sum(x)/len(x)*(sum(x)-1)/(len(x)-1)
+
+            dist_G = self.GraphDist[ind_G].T[ind_G].T
+            rho_G = (len(x)-sum(x))/len(x)*((len(x)-sum(x))-1)/(len(x)-1)
+
+            PN = np.empty(maxdist)
+            PG = np.empty(maxdist)
+            for i in range(1,maxdist+1):
+                PN[i-1] = len(dist_N[dist_N==i])/len(self.GraphDist[self.GraphDist==i])/rho_N
+                PG[i-1] = len(dist_G[dist_G==i])/len(self.GraphDist[self.GraphDist==i])/rho_G
+
+        plt.rc('font', size=14)
+        if legend == True:
+            plt.plot(range(1,maxdist+1), PN, color='c', lw = lw, ls = ls, label = 'N+G-')
+            plt.plot(range(1,maxdist+1), PG, color='m', lw = lw, ls = ls, label = 'N-G+')
+            plt.legend()
+        else:
+            plt.plot(range(1,maxdist+1), PN, color='c', lw = lw, ls = ls)
+            plt.plot(range(1,maxdist+1), PG, color='m', lw = lw, ls = ls)
+        plt.axhline(1, ls='dashed', color='k')
+        
+        if legend == True:
+            plt.legend()
 
     def collectData(self):
         self.Data.append([self.xy,self.r,self.N,self.G])
         return
 
     def saveData(self, directory = ''):
-        # Save all parameters in .txt file
-        with open(directory + 'Parameters.txt', 'w') as f:
-            f.write(''.join(["%s = %s\n" % (k,v) for k,v in self.__dict__.items() if not hasattr(v, '__iter__')]))
+        
+        # Create directory if not existent
+        if not os.path.exists(directory):
+            os.mkdir(directory)
 
         # Save plot of geometry
-        plt.figure()
+        plt.figure(figsize=[6.4, 4.8])
         self.cellPlot()
         plt.savefig(directory + 'tissue.png', transparent = True) 
         plt.savefig(directory + 'tissue.pdf', transparent = True)   
 
         # Save plot of NANOG
-        plt.figure()
+        plt.figure(figsize=[6.4, 4.8])
         self.cellPlot(self.N)
         plt.savefig(directory + 'NANOG.png', transparent = True) 
         plt.savefig(directory + 'NANOG.pdf', transparent = True)   
 
         # Save plot of GATA6
-        plt.figure()
+        plt.figure(figsize=[6.4, 4.8])
         self.cellPlot(self.G)
         plt.savefig(directory + 'GATA6.png', transparent = True) 
         plt.savefig(directory + 'GATA6.pdf', transparent = True)
 
+        # Save organoid Data
         df = pd.DataFrame()
         df['x-Position'] = self.xy[:,0]
         df['y-Position'] = self.xy[:,1]
@@ -281,12 +336,16 @@ class Organoid(Parameters):
         df['NANOG'] = self.N
         df['GATA6'] = self.G
         df.to_csv(directory + 'Data.csv', index = False)
+        
+        # Save all parameters in .txt file
+        with open(directory + 'Parameters.txt', 'w') as f:
+            f.write(''.join(["%s = %s\n" % (k,v) for k,v in self.__dict__.items() if not hasattr(v, '__iter__')]))
 
     def saveAnim(self, directory = '', frames = None, fps = 60):
 
         fig = plt.figure()
-        bmin = min(min(self.xy[:,0]),min(self.xy[:,1])) - 3.5*self.r_max
-        bmax = max(max(self.xy[:,0]),max(self.xy[:,1])) + 3.5*self.r_max
+        bmin = min(min(self.xy[:,0]),min(self.xy[:,1])) - 1.5*self.r_max
+        bmax = max(max(self.xy[:,0]),max(self.xy[:,1])) + 1.5*self.r_max
 
 
         def update(i):
@@ -302,6 +361,7 @@ class Organoid(Parameters):
             org.cellPlot(org.N, size=1000/self.nofCells, bounds=[min(self.N),max(self.N)])
             plt.xlim(bmin, bmax)
             plt.ylim(bmin, bmax)
+            plt.gca().set_adjustable("box")
             return
 
         if frames == None:
@@ -315,9 +375,9 @@ class Organoid(Parameters):
         return
 
     def evolution(self, T = 0, file = None, mode = 'transcription + geometry'):
-        if T == 0:
-            T = self.T       
-        N = int(T/self.dt)
+        if T != 0:
+            self.T = T       
+        N = int(self.T/self.dt)
 
         if not hasattr(self, 'xy'):
             self.initialConditions(file = file)
@@ -335,7 +395,7 @@ class Organoid(Parameters):
             for i in range(N):
                 self.t += self.dt
                 self.transcription()
-                self.collectData()
+                #self.collectData()
                 
         if mode == 'transcription + geometry':
             for i in range(N):

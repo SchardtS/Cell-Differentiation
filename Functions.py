@@ -18,6 +18,7 @@ import pandas as pd
 from FVmesh import initializeFVmesh
 from matplotlib.animation import FuncAnimation
 import networkx as nx
+import itertools
 
 
 # Fate assignment function (only valid until a better deciding criterion has been found)
@@ -487,7 +488,23 @@ def saveAnim(Organoid, Prm, folder):
 # Cutoff distance in experimental data should be fixed to 91
 def graphdistance3D(Pos, cutoff = 91):
     
+    Gr = nx.Graph()
+    Dist = cdist(Pos, Pos)
     tri = Delaunay(Pos)
+    n = len(Pos)
+
+    for simp in tri.simplices:
+        for path in list(itertools.combinations(simp, 2)):
+            if Dist[path[0],path[1]] < cutoff:
+                nx.add_path(Gr, path)
+
+    dist_dict = dict(nx.all_pairs_dijkstra_path_length(Gr))
+    dist = np.empty([n, n])
+    for i in range(n):
+        for j in range(n):
+            dist[i,j] = dist_dict[i][j]
+    
+    """tri = Delaunay(Pos)
     Dist = cdist(Pos, Pos)
     Gr = nx.Graph()
     n = len(Pos)
@@ -506,11 +523,10 @@ def graphdistance3D(Pos, cutoff = 91):
     dist = np.empty([n, n])
     for i in range(n):
         for j in range(n):
-            dist[i,j] = dist_dict[i][j]
+            dist[i,j] = dist_dict[i][j]"""
 
 
     return dist
-
 
 
 def loadExpData(ID):
