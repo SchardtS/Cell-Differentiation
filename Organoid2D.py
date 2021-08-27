@@ -1,314 +1,422 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-import random
-from scipy.spatial import distance
+import os
 import numpy as np
-from scipy.spatial.distance import euclidean, cdist
-from scipy.integrate import nquad
-from FVmesh import initializeFVmesh
-from Model import rhs_activation
+import matplotlib.pyplot as plt
+import pandas as pd
+from scipy.spatial.distance import cdist
+from shapely.geometry import Polygon, Point
+import matplotlib as mpl
+import matplotlib.cm as cm
+from Parameters import Parameters
+from matplotlib.animation import FuncAnimation
+import networkx as nx
+from scipy.spatial import Delaunay
+import itertools
 
 
-#Hilfsfunktionen
-
-def Distance(Pos):              
-    dist = cdist(Pos, Pos)
-    return dist
-
-def Forces(Pos,r,F0,a,s,dist):
-    rT = np.reshape(r,[len(r),1])
-    x = Pos[:,0]
-    y = Pos[:,1]
-    xT = np.reshape(x,[len(x),1])
-    yT = np.reshape(y,[len(y),1])
-    
-    r_pairwise = r+rT
-    x_pairwise = x-xT
-    y_pairwise = y-yT
-    
-    F = np.minimum(F0*2*a*(np.exp(-2*a*(dist-r_pairwise*s)) - np.exp(-a*(dist-r_pairwise*s))), 30)
-    #F[dist > r_pairwise] = 0
-
-    np.fill_diagonal(dist, np.inf)
-    Fx = F*(x_pairwise)/dist
-    Fy = F*(y_pairwise)/dist
-    
-    return Fx, Fy
-
-def BoundaryForces(Pos,TE,r,F0,a,s):
-
-    diff = np.empty(np.shape(Pos))
-    dist = np.empty(len(Pos))
-    for i in range(len(Pos)):
-        dist_arr = cdist([Pos[i]],TE)
-        ind = np.argmin(dist_arr[0])
-        diff[i] = Pos[i] - TE[ind]
-        dist[i] = dist_arr[0,ind]
-
-    F_b = np.minimum(F0*2*2*a*(np.exp(-2*a*(dist-r*s)) - np.exp(-a*(dist-r*s))), 60)
-    #F_b[dist > r] = 0
-    
-    Fx = F_b*diff[:,0]/dist
-    Fy = F_b*diff[:,1]/dist
-
-    return Fx, Fy
-
-def DivisionProbability(r):
-    c = 100
-    y = 0.95
-    rmin = 0.9
-    rmax = 1
-    b = (1 + np.exp(c*(rmax-y)))*(1 + np.exp(c*(rmin-y)))/(np.exp(c*(rmin-y)) - np.exp(c*(rmax-y)))
-    a = -b/(1 + np.exp(c*(rmin-y)))
-    P = a+b/(1 + np.exp(c*(r-y)))
-
-    return np.maximum(0, P)
-
-def ProbabilityDensity(r):
-    c = 100
-    y = 0.95
-    rmin = 0.9
-    rmax = 1
-    b = (1 + np.exp(c*(rmax-y)))*(1 + np.exp(c*(rmin-y)))/(np.exp(c*(rmin-y)) - np.exp(c*(rmax-y)))
-    fval = -b*c/(1 + np.exp(c*(r-y)))/(1 + np.exp(c*(y-r)))
-
-    return fval
-
-def ExpectedDivisionRadius():
-    c = 100
-    y = 0.95
-    rmin = 0.9
-    rmax = 1
-    b = (1 + np.exp(c*(rmax-y)))*(1 + np.exp(c*(rmin-y)))/(np.exp(c*(rmin-y)) - np.exp(c*(rmax-y)))
-    a = -b/(1 + np.exp(c*(rmin-y)))
-    E = rmax - a*(rmax-rmin) + b/c*np.log((1+np.exp(-c*(rmax-y)))/(1+np.exp(-c*(rmin-y))))
-    return E
-
-""" def GrowthRate(nofCells_start, nofCells_end, endtime, rmax):
-    T = endtime
-    r_div = ExpectedDivisionRadius()
-    k = -1/(np.log(2)*T)*np.log(nofCells_end/nofCells_start)*np.log((rmax - r_div)/(rmax - (1/2)**(1/3)*r_div))
-    return k """
-
-def GrowthRate(Prm):
-
-    func = lambda r, r0: np.log((Prm.rmax - r)/(Prm.rmax - r0/2**(1/2))) \
-        *ProbabilityDensity(r)*ProbabilityDensity(r0)
-    I, err = nquad(func, [[0.9, 1],[0.9, 1]])
-
-    k = - np.log(Prm.nofCells_end/Prm.nofCells_start)/(np.log(2)*Prm.T)*I
-
-    func3 = lambda r, r0: -1/k*func(r,r0)
-    T_DIV, err = nquad(func3, [[0.9, 1],[0.9, 1]])
-    print('Expected cell division time =', T_DIV)
-
-    func2 = lambda r, r0: 2**(-Prm.T*k/np.log((Prm.rmax - r)/(Prm.rmax - r0/2**(1/2)))) \
-        *ProbabilityDensity(r)*(10*2**(1/2)-ProbabilityDensity(r0))*Prm.nofCells_start
-    I2, err = nquad(func2, [[0.9, 1],[0.9, 1]])
-    print('Expected number of Cells =', I2)
-    return k
-
-class Organoid:
-  
+class Organoid(Parameters):
     def __init__(self):
-        self.IDs = []
-        self.Pos = []
-        self.Radius = []
-        self.oldRadius = []
-        self.initRadius = []
-        self.Data = []
-        self.t0 = []
-        self.DivRad = []
-        self.DivTime = []
-        self.Dist = []
-        self.NANOG = []
-        self.GATA6 = []
-        return
-    
-    def initializeCells(self,Prm):
-        #Bereich festlegen
- 
-        Radius_Bereich = Prm.nofCells_start**(1/3)*Prm.rmax*0.75
-        min_XY = Radius_Bereich/2*-1
-        max_XY = Radius_Bereich/2
-
-               
-        #Erste Zelle auf (0,0)
-        #Cell0 = [0,0]
-        self.IDs.append(0)
-        self.Pos = np.array([[0,0]])
-        self.Radius = np.append(self.Radius, random.gauss((1/2)**(1/3)*ExpectedDivisionRadius(),0.1))
-        self.t0 = np.append(self.t0, 0)
-            
-        #restliche Zellen Random im festgelegten Bereich verteilen mit einem Mindestabstand zueinander.
-        for i in range(1,Prm.nofCells_start):
-            trys = 0
-            self.IDs.append(i)
-            self.t0 = np.append(self.t0, 0)
-            self.Radius = np.append(self.Radius, random.gauss((1/2)**(1/3)*ExpectedDivisionRadius(),0.1))  
-            Distance_is_OK = False
-            self.Pos = np.append(self.Pos, [[random.uniform(min_XY,max_XY),
-                                            random.uniform(min_XY,max_XY)]], axis=0)
-            while Distance_is_OK == False:                    
-                safer = 1
-                if trys >= 50 and trys < 150:
-                    safer = 0.95
-                elif trys >=150 and trys < 350:
-                    safer = 0.9
-                elif trys >= 350 and trys < 500:
-                    safer = 0.7
-                elif trys >= 500 and trys < 750:
-                    safer = 0.6
-                elif trys >= 750 and trys < 1000:
-                    safer = 0.5
-                elif trys >= 1000 and trys < 2000:
-                    safer = 0.4
-                elif trys >= 2000 and trys < 5000:
-                    safer = 0.25
-                elif trys >= 5000 and trys < 10000:
-                    safer = 0.1
-                elif trys >= 50000:
-                    safer = 0.01
-                Distance_i_MP = euclidean(self.Pos[i],[0,0])
-                if Distance_i_MP > Radius_Bereich:
-                    Distance_is_OK = False
-                    self.Pos[i] = [random.uniform(min_XY,max_XY),
-                                   random.uniform(min_XY,max_XY)]
-                    continue
-                for ii in self.IDs:                                     
-                    if not ii == i:
-                        Distance_i_ii = euclidean(self.Pos[i],self.Pos[ii])
-                        if Distance_i_ii < safer*Prm.rmax:
-                            Distance_is_OK = False
-                            self.Pos[i] = [random.uniform(min_XY,max_XY),
-                                           random.uniform(min_XY,max_XY)]
-                            trys += 1
-                            break 
-                        elif Distance_i_ii >= safer*Prm.rmax:
-                            Distance_is_OK = True 
-                            
-        self.oldRadius = self.Radius
-        self.initRadius = self.Radius
-        self.Dist = Distance(self.Pos)
-        self.NANOG = np.array([random.gauss(0.02,0.001) for i in self.IDs])
-        self.GATA6 = np.array([random.gauss(0.02,0.001) for i in self.IDs])
-        return
-                            
-    def cellDivision(self,Prm):
+        Parameters.__init__(self)
         
-        P0 = DivisionProbability(self.oldRadius/Prm.rmax)       
-        P = DivisionProbability(self.Radius/Prm.rmax)
-        IDs = self.IDs
-
-        for i in range(len(IDs)):
-            if len(self.Pos) >= self.CellMax:
-                break
-            radius = self.Radius[i]
-            if radius < 0.9:
-                continue
-                
-            if self.oldRadius[i] == self.initRadius[i]:
-                Prob = P[i]
+    def initialConditions(self, file = None):
+        if file == None:
+            self.xy = np.array([[-0.5,-0.5], [0.5,-0.5], [0,0.5]])
+            self.r = np.array([0.8, 0.9, 0.75])
+            
+        else:
+            Data = pd.read_csv(file)
+            if 'z-Position' in Data:
+                self.xy = Data[['x-Position','y-Position','z-Position']].to_numpy()
             else:
-                Prob = (P[i]-P0[i])/(1-P0[i])
-           
-            if random.random() < Prob:
+                self.xy = Data[['x-Position','y-Position']].to_numpy()
+            self.r = Data['Radius'].to_numpy()
 
-                self.DivRad.append(self.Radius[i])
-                self.DivTime.append(self.t - self.t0[i])
-
-                NewID = self.IDs[-1]+1
-                self.IDs.append(NewID)
-                NewRadius = self.Radius[i]/2**(1/2)
-                
-                Distance_between_new_cells = self.Radius[i]-NewRadius
-                Dbnc_low = (Distance_between_new_cells)/2.2
-                Dbnc_high = (Distance_between_new_cells)/1.8
-                Dbnc = random.uniform(Dbnc_low,Dbnc_high)
-                
-                angle = np.random.rand()*2*np.pi
-                dx = Dbnc*np.cos(angle)
-                dy = Dbnc*np.sin(angle)
-
-                dPos = [dx,dy]
-                NewPos1 = np.array(self.Pos[i])+np.array(dPos)
-                NewPos2 = np.array(self.Pos[i])-np.array(dPos)
-
-                self.Pos = np.append(self.Pos, [NewPos1], axis=0)
-                self.Pos[i] = NewPos2
-                
-                self.Radius[i] = NewRadius
-                self.Radius = np.append(self.Radius, NewRadius)
-                self.initRadius[i] = NewRadius
-                self.initRadius = np.append(self.initRadius, NewRadius)
-                self.t0[i] = self.t
-                self.t0 = np.append(self.t0, self.t)
-                self.NANOG = np.append(self.NANOG, self.NANOG[i])
-                self.GATA6 = np.append(self.GATA6, self.GATA6[i])
-
-        return
-                 
-    def radiusGrowth(self,Prm):
-        self.oldRadius = self.Radius
-        self.Radius = Prm.rmax - np.exp(-self.k*(self.t-self.t0))*(Prm.rmax - self.initRadius)
-        return
-     
-    def displacement(self,Prm):
-        self.Dist = Distance(self.Pos)
-        Fx, Fy = Forces(self.Pos,self.Radius,Prm.F0,Prm.alpha,Prm.sigma,self.Dist)
-        Fx_sum = np.sum(Fx, axis=1)
-        Fy_sum = np.sum(Fy, axis=1)
-        displacement = np.array([Fx_sum,Fy_sum]).T
-        if type(self.TE) != type(None):
-            Fbx, Fby = BoundaryForces(self.Pos,self.TE,self.Radius,Prm.F0,Prm.alpha,Prm.sigma)
-            displacement -= np.array([Fbx,Fby]).T
+        self.nofCells = len(self.r)
+        self.t = 0
+        self.r0 = self.r
+        self.t0 = np.zeros(self.nofCells)
+        N0 = self.r_N/self.gamma_N*3/4
+        G0 = self.r_N/self.gamma_N*3/4
+        self.u = np.append(np.random.normal(N0, N0*0.01, self.nofCells),
+                            np.random.normal(G0, G0*0.01, self.nofCells))
+        self.N = self.u[:self.nofCells]
+        self.G = self.u[self.nofCells:]
+        self.Data = []
+        self.dist = cdist(self.xy, self.xy)
         
-        self.Pos = self.Pos - self.dt*displacement
+    def radiusGrowth(self):
+        self.r_old = self.r
+        self.r = self.r_max - np.exp(-self.k*(self.t-self.t0))*(self.r_max - self.r0)
+        
+    def divisionProbability(self, r):
+        c = 100/self.r_max
+        y = 0.95*self.r_max
+        r_min = 0.9*self.r_max
+        b = (1 + np.exp(c*(self.r_max-y)))*(1 + np.exp(c*(r_min-y)))/(np.exp(c*(r_min-y)) - np.exp(c*(self.r_max-y)))
+        a = -b/(1 + np.exp(c*(r_min-y)))
+        P = a+b/(1 + np.exp(c*(r-y)))
 
-        return
+        return np.maximum(0,P)
+    
+    def cellDivision(self):
+        P0 = self.divisionProbability(self.r_old)       
+        P = self.divisionProbability(self.r)
 
-    def transcription(self, Prm):
-        FVmesh = initializeFVmesh(self.Pos, reduced=True, Radius=self.Radius)
-        x = np.append(self.NANOG, self.GATA6)
-        rhs = rhs_activation(self.t, x, Prm, FVmesh)
+        Prob = (P-P0)/(1-P0)
+        Prob[self.r_old == self.r0] = P[self.r_old == self.r0]
 
-        rhs_N = rhs[:len(self.IDs)]
-        rhs_G = rhs[len(self.IDs):]
+        # Choose where division will randomly occur
+        random_numbers = np.random.rand(self.nofCells)
+        indices = np.where(random_numbers < Prob)
 
-        self.NANOG = self.NANOG + self.dt*rhs_N
-        self.GATA6 = self.GATA6 + self.dt*rhs_G
+        # New radius based on the area of the mother cell being two times that of the daughter cells
+        # Use volume in 3D instead
+        r_new = self.r[indices]/2**(1/2)
+        N_new = self.N[indices]/2
+        G_new = self.G[indices]/2
 
-    def dataCollecting(self):     
-        IDs = self.IDs[:]
-        Pos = np.array(self.Pos[:])
-        NANOG = np.array(self.NANOG)
-        GATA6 = np.array(self.GATA6)
-        Radius = self.Radius[:]
-        self.Data.append([IDs,Pos,Radius,NANOG,GATA6])
-        return
+        # Distance between the two daughter cells
+        dist = np.random.normal((self.r[indices] - r_new)/2, 0.1*(self.r[indices] - r_new)/2)
 
-def initializeOrganoid(Prm, TE=None, Transcription = True, CellMax = 10000):
+        # Angles of cell division
+        angle = np.random.rand(len(indices))*2*np.pi
 
-    self = Organoid()
-    self.__init__()
-    self.CellMax = CellMax
-    self.TE = TE
-    self.t = 0
-    self.k = GrowthRate(Prm)
-    self.dt = Prm.dt
-    self.initializeCells(Prm)
-    self.dataCollecting()
-    self.cellDivision(Prm)
-    for step in range(1, Prm.nofSteps+1):
-        if len(self.Pos) >= self.CellMax:
-            break
-        self.t = step*Prm.dt
-        self.radiusGrowth(Prm)
-        self.cellDivision(Prm)
-        self.displacement(Prm)
-        if Transcription == True:
-            self.transcription(Prm)
+        # Displacement vectors
+        dx = dist*np.cos(angle)
+        dy = dist*np.sin(angle)
+
+        # Displacement
+        dxy = np.array([dx,dy]).T
+        xy1 = self.xy[indices] + dxy
+        xy2 = self.xy[indices] - dxy
+
+        # Change x-y-position to new value and add new cell to array
+        self.xy[indices] = xy1
+        self.xy = np.append(self.xy, xy2, axis=0)
+
+        # Update radii and include radii for new cells
+        self.r[indices] = r_new
+        self.r = np.append(self.r, r_new)
+
+        # Change initial radius to value directly after division and include new cells to array
+        self.r0[indices] = r_new
+        self.r0 = np.append(self.r0, r_new)
+
+        # Change initial radius to value directly after division and include new cells to array
+        self.t0[indices] = self.t
+        self.t0 = np.append(self.t0, self.t0[indices])
+                               
+        # Include new cells to array
+        self.N[indices] = N_new
+        self.N = np.append(self.N, N_new)
+        self.G[indices] = G_new
+        self.G = np.append(self.G, G_new)
+        self.u = np.append(self.N, self.G)
+    
+        # Change new number of cells
+        self.nofCells = len(self.r)
+
+    def displacement(self):
+        self.dist = cdist(self.xy, self.xy)
+
+        x = self.xy[:,0]
+        y = self.xy[:,1]
+
+        # Pairwise sum of radii and difference of coordinates
+        r_pairwise = self.r + self.r[:,None]
+        x_pairwise = x - x[:,None]
+        y_pairwise = y - y[:,None]
+
+        # Absolute values of forces according to Morse potential
+        F = self.F0*2*self.alpha*(np.exp(-self.alpha*(self.dist-r_pairwise*self.sigma)) - np.exp(-2*self.alpha*(self.dist-r_pairwise*self.sigma)))
+        F[self.dist > r_pairwise] = 0
+
+        # Fill distance matrix with inf on diagonal
+        dist = self.dist*1
+        np.fill_diagonal(dist, np.inf)
+
+        # x- and y-direction of forces
+        Fx = F*(x_pairwise)/dist
+        Fy = F*(y_pairwise)/dist
+
+        # Sum of all forces acting on each cell as a vector
+        Force = np.array([np.sum(Fx, axis=1), np.sum(Fy, axis=1)]).T
+        
+        self.xy = self.xy + self.dt*Force# + 0.1*np.random.normal(0, self.dt**(1/2), self.xy.shape)
+        
+    def graphdistance(self):
+        Gr = nx.Graph()
+        self.dist = cdist(self.xy, self.xy)
+        rr = self.r + self.r[:,None]
+        tri = Delaunay(self.xy)
+                               
+        for nodes in tri.simplices:
+            for path in list(itertools.combinations(nodes, 2)):
+                if self.dist[path[0],path[1]] < rr[path[0],path[1]]:
+                    nx.add_path(Gr, path)
+
+        dist_dict = dict(nx.all_pairs_dijkstra_path_length(Gr))
+        self.GraphDist = np.empty([self.nofCells, self.nofCells])
+        for i in range(self.nofCells):
+            for j in range(self.nofCells):
+                self.GraphDist[i,j] = dist_dict[i][j]
+ 
+        #self.GraphDist = np.floor(self.dist/np.mean(2*self.r))
+  
+    def transcription(self):
+        rhs = np.empty(self.nofCells*2)
+
+        a = np.exp(-self.eps_N)
+        b = np.exp(-self.eps_G)
+        c = np.exp(-self.eps_S)
+        d = np.exp(-self.eps_NS)
+
+        d_ij = np.maximum(self.GraphDist-1, 0)         
+        scaling = self.q**(d_ij)
+        np.fill_diagonal(scaling, 0)
+        val = self.G*scaling#*(1-self.q)/self.q
+        np.fill_diagonal(val, 0)
+        self.S = val.sum(1)/max(scaling.sum(1))
+
+        pN = (a*self.N)*(1+d*c*self.S)/(1 + a*self.N*(1+d*c*self.S) + b*self.G + c*self.S)
+        pG =        (b*self.G)        /(1 + a*self.N*(1+d*c*self.S) + b*self.G + c*self.S)
+
+        rhs[:self.nofCells] = self.r_N*pN - self.gamma_N*self.N
+        rhs[self.nofCells:] = self.r_G*pG - self.gamma_G*self.G
+                               
+        self.u = self.u + self.dt*rhs
+        self.N = self.u[:self.nofCells]
+        self.G = self.u[self.nofCells:]
+                                      
+    def cellPlot(self, *Val, size = None, bounds = None, radius = 'individual'):
+        if size == None:
+            size = 1000/len(self.xy)
+        
+        if radius == 'individual':
+            r = self.r
+        if radius == 'mean':
+            r = self.r.mean()*np.ones(self.nofCells)
+
+        #### polygon construction ####
+        polygons = []
+        cells = [Point(self.xy[i,:]).buffer(r[i]) for i in range(self.nofCells)]
+        for i in range(self.nofCells):
+            indices = np.where((self.dist[i,:] < r[i] + r[:]) & (self.dist[i,:] != 0))
+            cell1 = cells[i]
+
+            d = self.dist[i,indices[0]]
+            r_neigh = r[indices] 
+            a = (r[i]**2 - r_neigh**2 + d**2)/(2*d)
+            d12 = self.xy[indices[0],:] - self.xy[i,:]
+            d12_orth = np.array([d12[:,1],-d12[:,0]]).T
+
+            rect1 = self.xy[i,:] + d12/d[:,None]*a[:,None] + d12_orth/d[:,None]*r[i]
+            rect2 = self.xy[i,:] - d12/d[:,None]*r[i] + d12_orth/d[:,None]*r[i]
+            rect3 = self.xy[i,:] - d12/d[:,None]*r[i] - d12_orth/d[:,None]*r[i]
+            rect4 = self.xy[i,:] + d12/d[:,None]*a[:,None] - d12_orth/d[:,None]*r[i]
+
+            for j in range(len(indices[0])):
+
+                rectangle = np.array([rect1[j,:],rect2[j,:],rect3[j,:],rect4[j,:]])
+                rectangle = Polygon(rectangle)
+
+                cell1 = cell1.intersection(rectangle)
+
+            polygons.append(cell1)    
+        
+        #### plot polygons ####
+        if Val == ():
+            for i in range(self.nofCells):
+                x, y = polygons[i].exterior.xy
+                plt.plot(x, y, 'k')
+        
+        #### color filling ####
+        else:
+            Val = Val[0]
+
+            if bounds == None:
+                bounds = [min(Val), max(Val)]
             
-        self.dataCollecting()
-    return self   
+            norm = mpl.colors.Normalize(vmin=bounds[0], vmax=bounds[1], clip=True)
+            mapper = cm.ScalarMappable(norm=norm, cmap='cool')
+
+            for i in range(self.nofCells):
+                x,y = polygons[i].exterior.xy
+                plt.fill(x,y, facecolor=mapper.to_rgba(float(Val[i])), edgecolor='k', linewidth=1, zorder=1)
+        
+        #### plot cell nuclei ####
+        plt.scatter(self.xy[:,0],self.xy[:,1], color='k', s=size, zorder=2)
+        plt.axis('equal')
+        plt.axis('off')
+
+    def timePlot(self):
+
+        plt.figure()
+        for i in range(self.nofCells):
+            t = []
+            NANOG = []
+            for k in range(int(self.T/self.dt)):
+                if len(self.Data[k][2])-1 >= i:
+                    NANOG.append(self.Data[k][2][i])
+                    t.append(k*self.dt)
+            plt.plot(t, NANOG)
+
+        plt.title('NANOG')
+        plt.xlabel('Time')
+        plt.ylabel('Concentrations')
+
+    def pcf(self, ls = 'solid', lw = 2, plot = True):
+        x = np.zeros(self.nofCells)
+        x[self.N > self.G] = 1
+        maxdist = int(np.max(self.GraphDist))
+        ind_N = np.where(x==1)[0]
+        ind_G = np.where(x==0)[0]
+        if ind_N.size == 0:
+            self.pcf_N = np.empty(maxdist)
+            for i in range(1,maxdist+1):
+                self.pcf_N[i-1] = 0
+        if ind_G.size == 0:
+            self.pcf_G = np.empty(maxdist)
+            for i in range(1,maxdist+1):
+                self.pcf_G[i-1] = 0
+                
+        else:
+            dist_N = self.GraphDist[ind_N].T[ind_N].T
+            rho_N = sum(x)/len(x)*(sum(x)-1)/(len(x)-1)
+
+            dist_G = self.GraphDist[ind_G].T[ind_G].T
+            rho_G = (len(x)-sum(x))/len(x)*((len(x)-sum(x))-1)/(len(x)-1)
+
+            self.pcf_N = np.empty(maxdist)
+            self.pcf_G = np.empty(maxdist)
+            for i in range(1,maxdist+1):
+                self.pcf_N[i-1] = len(dist_N[dist_N==i])/len(self.GraphDist[self.GraphDist==i])/rho_N
+                self.pcf_G[i-1] = len(dist_G[dist_G==i])/len(self.GraphDist[self.GraphDist==i])/rho_G
+
+        if plot == True:
+            plt.rc('font', size=14)
+            plt.plot(range(1,maxdist+1), self.pcf_N, color='m', lw = lw, ls = ls)
+            plt.plot(range(1,maxdist+1), self.pcf_G, color='c', lw = lw, ls = ls)
+            plt.axhline(1, ls='dashed', color='k')
+        
+        if legend == True:
+            plt.legend()
+
+    def moran(self):
+        x = np.zeros(self.N.shape)
+        x[self.N > self.G] = 1
+        
+        W = np.copy(self.GraphDist)
+        W[W > 1] = 0
+        y = x - x.mean()
+
+        numerator = np.dot(y, np.dot(W, y))
+        denominator = np.sum(y**2)
+
+        self.Morans_I = self.nofCells/np.sum(W)*numerator/denominator
+
+    def collectData(self):
+        self.Data.append([self.xy,self.r,self.N,self.G])
+        return
+
+    def saveData(self, directory = ''):
+        
+        # Create directory if not existent
+        if not os.path.exists(directory):
+            os.mkdir(directory)
+
+        # Save plot of geometry
+        plt.figure(figsize=[6.4, 4.8])
+        self.cellPlot(radius = 'mean')
+        plt.savefig(directory + 'tissue.png', transparent = True) 
+        plt.savefig(directory + 'tissue.pdf', transparent = True)   
+
+        # Save plot of NANOG
+        plt.figure(figsize=[6.4, 4.8])
+        self.cellPlot(self.N, radius = 'mean')
+        plt.savefig(directory + 'NANOG.png', transparent = True) 
+        plt.savefig(directory + 'NANOG.pdf', transparent = True)   
+
+        # Save plot of GATA6
+        plt.figure(figsize=[6.4, 4.8])
+        self.cellPlot(self.G, radius = 'mean')
+        plt.savefig(directory + 'GATA6.png', transparent = True) 
+        plt.savefig(directory + 'GATA6.pdf', transparent = True)
+
+        # Save organoid Data
+        df = pd.DataFrame()
+        df['x-Position'] = self.xy[:,0]
+        df['y-Position'] = self.xy[:,1]
+        df['Radius'] = self.r
+        df['NANOG'] = self.N
+        df['GATA6'] = self.G
+        df.to_csv(directory + 'Data.csv', index = False)
+        
+        # Save all parameters in .txt file
+        with open(directory + 'Parameters.txt', 'w') as f:
+            f.write(''.join(["%s = %s\n" % (k,v) for k,v in self.__dict__.items() if not hasattr(v, '__iter__')]))
+
+    def saveAnim(self, directory = '', frames = None, fps = 60):
+
+        fig = plt.figure()
+        bmin = min(min(self.xy[:,0]),min(self.xy[:,1])) - 1.5*self.r_max
+        bmax = max(max(self.xy[:,0]),max(self.xy[:,1])) + 1.5*self.r_max
+
+
+        def update(i):
+            plt.cla()
+
+            org = Organoid()
+            org.nofCells = len(self.Data[i][0])
+            org.xy = self.Data[i][0]
+            org.r = self.Data[i][1]
+            org.N = self.Data[i][2]
+            org.dist = cdist(org.xy, org.xy)
+
+            org.cellPlot(org.N, size=1000/self.nofCells, bounds=[min(self.N),max(self.N)],radius='mean')
+            plt.xlim(bmin, bmax)
+            plt.ylim(bmin, bmax)
+            plt.gca().set_adjustable("box")
+            return
+
+        if frames == None:
+            frames = len(self.Data)
+        else:
+            frames = np.unique(np.linspace(0, len(self.Data)-1, frames, dtype=int))
+
+        ani = FuncAnimation(fig, update, frames=frames)
+        ani.save(directory + '/NANOG.mp4', fps=fps, dpi=200, savefig_kwargs={'transparent': True, 'facecolor': 'none'})
+
+        return
+
+    def evolution(self, T = 0, file = None, mode = 'transcription + geometry'):
+        if T != 0:
+            self.T = T       
+        N = int(self.T/self.dt)
+
+        if not hasattr(self, 'xy'):
+            self.initialConditions(file = file)
+        
+        if mode == 'geometry':
+            for i in range(N):
+                self.t += self.dt
+                self.radiusGrowth()
+                self.cellDivision()
+                self.displacement()
+                self.collectData()
+                
+        if mode == 'transcription':
+            self.graphdistance()
+            for i in range(N):
+                self.t += self.dt
+                self.transcription()
+                #self.collectData()
+                
+        if mode == 'transcription + geometry':
+            for i in range(N):
+                self.t += self.dt
+                self.radiusGrowth()
+                self.cellDivision()
+                self.displacement()
+                self.graphdistance()
+                self.transcription()
+                self.collectData()

@@ -6,7 +6,7 @@ from scipy.spatial.distance import cdist
 from shapely.geometry import Polygon, Point
 import matplotlib as mpl
 import matplotlib.cm as cm
-from Parameters_new import Parameters
+from Parameters import Parameters
 from matplotlib.animation import FuncAnimation
 import itertools
 import networkx as nx
@@ -221,20 +221,20 @@ class Organoid(Parameters):
         plt.xlabel('Time')
         plt.ylabel('Concentrations')
 
-    def pcf(self, ls = 'solid', lw = 2, legend = True):
+    def pcf(self, ls = 'solid', lw = 2, plot = True):
         x = np.zeros(self.nofCells)
         x[self.N > self.G] = 1
         maxdist = int(np.max(self.GraphDist))
         ind_N = np.where(x==1)[0]
         ind_G = np.where(x==0)[0]
         if ind_N.size == 0:
-            PN = np.empty(maxdist)
+            self.pcf_N = np.empty(maxdist)
             for i in range(1,maxdist+1):
-                PN[i-1] = 0
+                self.pcf_N[i-1] = 0
         if ind_G.size == 0:
-            PG = np.empty(maxdist)
+            self.pcf_G = np.empty(maxdist)
             for i in range(1,maxdist+1):
-                PG[i-1] = 0
+                self.pcf_G[i-1] = 0
                 
         else:
             dist_N = self.GraphDist[ind_N].T[ind_N].T
@@ -243,19 +243,31 @@ class Organoid(Parameters):
             dist_G = self.GraphDist[ind_G].T[ind_G].T
             rho_G = (len(x)-sum(x))/len(x)*((len(x)-sum(x))-1)/(len(x)-1)
 
-            PN = np.empty(maxdist)
-            PG = np.empty(maxdist)
+            self.pcf_N = np.empty(maxdist)
+            self.pcf_G = np.empty(maxdist)
             for i in range(1,maxdist+1):
-                PN[i-1] = len(dist_N[dist_N==i])/len(self.GraphDist[self.GraphDist==i])/rho_N
-                PG[i-1] = len(dist_G[dist_G==i])/len(self.GraphDist[self.GraphDist==i])/rho_G
+                self.pcf_N[i-1] = len(dist_N[dist_N==i])/len(self.GraphDist[self.GraphDist==i])/rho_N
+                self.pcf_G[i-1] = len(dist_G[dist_G==i])/len(self.GraphDist[self.GraphDist==i])/rho_G
 
-        plt.rc('font', size=14)
-        plt.plot(range(1,maxdist+1), PN, color='c', lw = lw, ls = ls, label = 'N+G-')
-        plt.plot(range(1,maxdist+1), PG, color='m', lw = lw, ls = ls, label = 'N-G+')
-        plt.axhline(1, ls='dashed', color='k')
+        if plot == True:
+            plt.rc('font', size=14)
+            plt.plot(range(1,maxdist+1), self.pcf_N, color='m', lw = lw, ls = ls, label = 'N+G-')
+            plt.plot(range(1,maxdist+1), self.pcf_G, color='c', lw = lw, ls = ls, label = 'N-G+')
+            plt.axhline(1, ls='dashed', color='k')
+            
+
+    def moran(self):
+        x = np.zeros(self.N.shape)
+        x[self.N > self.G] = 1
         
-        if legend == True:
-            plt.legend()
+        W = np.copy(self.GraphDist)
+        W[W > 1] = 0
+        y = x - x.mean()
+
+        numerator = np.dot(y, np.dot(W, y))
+        denominator = np.sum(y**2)
+
+        self.Morans_I = self.nofCells/np.sum(W)*numerator/denominator
 
     def collectData(self):
         self.Data.append([self.xyz,self.r,self.N,self.G])

@@ -1,55 +1,66 @@
-import numpy as np
+from Organoid2D import Organoid
+#from Organoid3D import Organoid
+from ExpData import ExpData
 import matplotlib.pyplot as plt
-from FVmesh import initializeFVmesh
-from Organoid2D import initializeOrganoid
-from Functions import coverPlot, saveData, paircorrelation
-from Model import rhs_activation
-from Parameters import setParameters
-from scipy.integrate import solve_ivp
-import pandas as pd
+import numpy as np
 
-Prm = setParameters()
-#Organoid = initializeOrganoid(Prm, Transcription=False)
-#Pos = Organoid.Pos
-Pos = np.array(pd.read_csv('testOrganoid.csv'))
-Radius = np.ones(len(Pos))*1.1
-FVmesh = initializeFVmesh(Pos, Radius=Radius)
+# Instantiate organoid class
+#org = Organoid()
 
-t = np.linspace(0,Prm.T,Prm.nofSteps)
+# Run simulation for specified amount of time. If not specified its 24 hours
+#org.evolution(T=26)
 
-x0 = [Prm.r_N/Prm.gamma_N*3/4, Prm.r_G/Prm.gamma_G*3/4]
-xInit = np.append(np.random.normal(x0[0], x0[0]*0.01, FVmesh.nofCells),
-                  np.random.normal(x0[1], x0[1]*0.01, FVmesh.nofCells))
-rhs = lambda t,x: rhs_activation(0, x, Prm, FVmesh)
-sol = solve_ivp(rhs, [0,Prm.T], xInit, t_eval = t, method = 'Radau')
-
-N = sol.y[:FVmesh.nofCells,-1]
-G = sol.y[FVmesh.nofCells:,-1]
-
-plt.figure()
-for i in range(FVmesh.nofCells):
-     plt.plot(t, sol.y[i,:])
-
-plt.title('NANOG')
-plt.xlabel('Time')
-plt.ylabel('Concentrations')
-
-
-plt.figure()
-for i in range(FVmesh.nofCells):
-    plt.plot(t, sol.y[i+FVmesh.nofCells,:])
-
-plt.title('GATA6')
-plt.xlabel('Time')
-plt.ylabel('Concentrations')
-
-print('Number of Cells =', FVmesh.nofCells)
-print('Number of NANOG Cells =', len(N[N>G]))
-print('Number of GATA6 Cells =', len(G[G>N]))
-
-plt.figure()
-FVmesh.plot(N)
+# Plot the result
+#org.cellPlot(org.N)
 #plt.figure()
-#paircorrelation(N, G, FVmesh)
-plt.show()
-saveData(FVmesh, Prm, N, G, 'Cell Fate')
+#org.cellPlot(org.N, radius='mean')
+#plt.show()
+
+""" org.moran()
+print(org.Morans_I)
+plt.figure()
+org.pcf()
+plt.savefig('Results/Cell Fate - Division/pcf.png', transparent = True) 
+plt.savefig('Results/Cell Fate - Division/pcf.pdf', transparent = True) 
+org.saveData(directory='Results/Cell Fate - Division/')
+org.saveAnim(directory='Results/Cell Fate - Division/', frames=400, fps=30)
+
+
+##### static geometry #####
+N0 = org.r_N/org.gamma_N*3/4
+G0 = org.r_N/org.gamma_N*3/4
+org.u = np.append(np.random.normal(N0, N0*0.01, org.nofCells),
+                  np.random.normal(G0, G0*0.01, org.nofCells))
+org.N = org.u[:org.nofCells]
+org.G = org.u[org.nofCells:]
+
+org.evolution(T=26, mode = 'transcription')
+org.saveData(directory='Results/Cell Fate - Static/')
+org.moran()
+print(org.Morans_I)
+plt.figure()
+org.pcf()
+plt.savefig('Results/Cell Fate - Static/pcf.png', transparent = True)
+plt.savefig('Results/Cell Fate - Static/pcf.pdf', transparent = True)  """
+
+""" dat = ExpData('Data/includingSurfaceDistance/extendedRawDataICMOrganoids.csv')
+dat.info(3)
+dat.pcf_bounds(1, 10)
+dat.moran_bounds(1, 10)
+print(dat.moran[1])
+plt.show() """
+
+from ExpData import ExpData
+import matplotlib.pyplot as plt
+
+dat = ExpData('Data/includingSurfaceDistance/extendedRawDataICMOrganoids.csv')
+for i in range(76):
+    ID = i+1
+    if ID < 10:
+        num = '0'+str(ID)
+    else:
+        num = str(ID)
+    if dat.stage[dat.id == ID][0] == '24h':
+        dat.fullPlot_HTML(ID, 1000, file='Results/HTML PLots/24h/Organoid ID = ' + num + '.html')
+    else:
+        dat.fullPlot_HTML(ID, 1000, file='Results/HTML PLots/48h/Organoid ID = ' + num + '.html')

@@ -609,3 +609,75 @@ def pc_bounds(Pop, GraphDist, N, portion_x = 1):
     Py_min = np.min(Py, axis=1)
     
     return Px_min, Px_max, Py_min, Py_max
+
+
+def pc_mean(Pop, GraphDist, N, portion_x = 1):
+    maxdist = int(np.max(GraphDist))
+    x = np.zeros([len(Pop), N])   
+    y = np.zeros([len(Pop), N])
+    x[(Pop == 'N+G-')] = 1
+    x[(Pop == 'N+G+') | (Pop == 'N-G-')] = np.random.random(x[(Pop == 'N+G+') | (Pop == 'N-G-')].shape)    
+    y[(Pop == 'N-G+')] = 1
+    y[(Pop == 'N+G+') | (Pop == 'N-G-')] = np.random.random(x[(Pop == 'N+G+') | (Pop == 'N-G-')].shape)
+    
+    if portion_x == 1:
+        portion_x = len(x[(Pop == 'N-G+')])/len(x[(Pop == 'N-G+') | (Pop == 'N+G-')])
+    portion_y = 1 - portion_x
+        
+    x[x > portion_x] = 1
+    x[x <= portion_x] = 0
+    y[y > portion_y] = 1
+    y[y <= portion_y] = 0
+    
+    cells = x.shape[0]
+    cells_x = np.sum(x, axis=0)
+    cells_y = np.sum(y, axis=0)
+    rho_x = cells_x*(cells_x - 1)/(cells*(cells - 1))
+    rho_y = cells_y*(cells_y - 1)/(cells*(cells - 1))
+
+    Px = np.zeros([maxdist,N])
+    Py = np.zeros([maxdist,N])
+    for j in range(N):
+        ind_x = np.where(x[:,j]==1)[0]
+        pairs_x = GraphDist[ind_x].T[ind_x].T
+        
+        ind_y = np.where(y[:,j]==1)[0]
+        pairs_y = GraphDist[ind_y].T[ind_y].T
+
+        for i in range(1,maxdist+1):
+            Px[i-1,j] = len(pairs_x[pairs_x==i])/len(GraphDist[GraphDist==i])/rho_x[j]
+            Py[i-1,j] = len(pairs_y[pairs_y==i])/len(GraphDist[GraphDist==i])/rho_y[j]
+
+    Px_mean = np.mean(Px, axis=1)
+    Py_mean = np.mean(Py, axis=1)
+    
+    return Px_mean, Py_mean
+
+
+def moran_bounds(Pop, GraphDist, N, portion_x = 1):
+    x = np.zeros([len(Pop), N])
+    x[(Pop == 'N+G-')] = 1
+    x[(Pop == 'N+G+') | (Pop == 'N-G-')] = np.random.random(x[(Pop == 'N+G+') | (Pop == 'N-G-')].shape)
+    
+    if portion_x == 1:
+        portion_x = len(x[(Pop == 'N-G+')])/len(x[(Pop == 'N-G+') | (Pop == 'N+G-')])
+    portion_y = 1 - portion_x
+        
+    x[x > portion_x] = 1
+    x[x <= portion_x] = 0
+    
+    I = np.empty(N)
+    for j in range(N):
+        W = np.copy(GraphDist)
+        W[W > 1] = 0
+        y = x[:,j] - x[:,j].mean()
+
+        numerator = np.dot(y, np.dot(W, y))
+        denominator = np.sum(y**2)
+
+        I[j] = len(y)/np.sum(W)*numerator/denominator
+
+    I_max = np.max(I)
+    I_min = np.min(I)
+    
+    return I_min, I_max
