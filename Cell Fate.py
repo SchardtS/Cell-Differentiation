@@ -54,7 +54,7 @@ from ExpData import ExpData
 import matplotlib.pyplot as plt
 
 dat = ExpData('Data/includingSurfaceDistance/extendedRawDataICMOrganoids.csv')
-for i in range(76):
+""" for i in range(76):
     ID = i+1
     if ID < 10:
         num = '0'+str(ID)
@@ -63,4 +63,6 @@ for i in range(76):
     if dat.stage[dat.id == ID][0] == '24h':
         dat.fullPlot_HTML(ID, 1000, file='Results/HTML PLots/24h/Organoid ID = ' + num + '.html')
     else:
-        dat.fullPlot_HTML(ID, 1000, file='Results/HTML PLots/48h/Organoid ID = ' + num + '.html')
+        dat.fullPlot_HTML(ID, 1000, file='Results/HTML PLots/48h/Organoid ID = ' + num + '.html') """
+
+dat.sliderPlot_HTML(1000, file = 'Results/HTML PLots/48h/All Organoids.html')

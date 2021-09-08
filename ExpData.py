@@ -120,7 +120,7 @@ class ExpData():
 
         if plot == True: 
             ranges = list(range(1,len(PN_min)+1))
-            plt.rc('font', size=12)
+            plt.rc('font', size=14)
             plt.fill_between(ranges, PN_min, PN_max, color='m', alpha=0.2, label='NANOG')
             plt.fill_between(ranges, PG_min, PG_max, color='c', alpha=0.2, label='GATA6')
             plt.plot(ranges, PN_mean, 'm', lw=2)
@@ -183,7 +183,7 @@ class ExpData():
         fig.suptitle('Organoid ID = ' + str(self.id[self.id == ID][0]) + 
                      ', Number of cells = ' + str(len(self.id[self.id == ID])),
                      fontweight='bold', fontsize = 20)
-        plt.rc('font', size=12)
+        plt.rc('font', size=14)
         ax1 = fig.add_subplot(2,3,1)
         ranges = list(range(1,len(self.pcf[ID][0])+1))
         ax1.fill_between(ranges, self.pcf[ID][0], self.pcf[ID][2], color='m', alpha=0.2, label='NANOG')
@@ -223,7 +223,7 @@ class ExpData():
 
     def fullPlot_HTML(self, ID, sample_size, file=None):
 
-        self.pcf_bounds(ID, sample_size=sample_size, plot = False)
+        self.pcf_bounds(ID, sample_size, plot = False)
         ranges = list(range(1,len(self.pcf[ID][0])+1))
         pop = self.pop[self.id == ID]
         nofD = len(pop[(pop == 'N-G-') | (pop == 'N+G+')])/len(pop)*100
@@ -232,9 +232,6 @@ class ExpData():
 
         xyz = self.pos[self.id == ID]
         pop = self.pop[self.id == ID]
-        i_N = np.where(pop == 'N+G-')
-        i_G = np.where(pop == 'N-G+')
-        i_D = np.where((pop == 'N+G+') | (pop == 'N-G-'))
 
         fig = make_subplots(rows=2, cols=3,specs=[[{}, {"rowspan": 2, "colspan": 2, "type": "scatter3d"}, None],
                                           [{}, None, None]])
@@ -306,3 +303,124 @@ class ExpData():
             fig.show()
         else:
             fig.write_html(file)
+
+    def sliderPlot_HTML(self, sample_size, file=None):
+        fig = make_subplots(rows=2, cols=3,specs=[[{}, {"rowspan": 2, "colspan": 2, "type": "scatter3d"}, None],
+                                [{}, None, None]])
+
+        info1 = '<b>PCF minimum (N+G-)</b><br>dist = %{x}<br>PCF = %{y}<extra></extra>'
+        info2 = '<b>PCF maximum (N+G-)</b><br>dist = %{x}<br>PCF = %{y}<extra></extra>'
+        info3 = '<b>PCF minimum (N-G+)</b><br>dist = %{x}<br>PCF = %{y}<extra></extra>'
+        info4 = '<b>PCF maximum (N-G+)</b><br>dist = %{x}<br>PCF = %{y}<extra></extra>'
+        infobar = '<b>%{y}%</b><extra></extra>'
+        info3d = '%{hovertext}<br>x = %{x}<br>y = %{y}<br>z = %{z}<extra></extra>'
+
+        steps = []
+
+        IDs = np.unique(self.id[self.stage == '48h'])
+        for i, ID in enumerate(IDs):
+            print(i+1, 'of', len(IDs))
+            if i == 0:
+                visibility = True
+            else:
+                visibility = False
+
+            self.pcf_bounds(ID, sample_size, plot = False)
+            ranges = list(range(1,len(self.pcf[ID][0])+1))
+            pop = self.pop[self.id == ID]
+            nofD = len(pop[(pop == 'N-G-') | (pop == 'N+G+')])/len(pop)*100
+            nofN = len(pop[pop == 'N+G-'])/len(pop)*100
+            nofG = len(pop[pop == 'N-G+'])/len(pop)*100
+
+            xyz = self.pos[self.id == ID]
+            pop = self.pop[self.id == ID]
+
+            fig.add_trace(
+                go.Scatter(x=ranges, y=self.pcf[ID][0], fill=None, mode='lines',
+                hovertemplate=info1, line_color='rgba(0.75,0,0.75,1)', visible=visibility),
+                row=1, col=1
+            )
+            fig.add_trace(
+                go.Scatter(x=ranges, y=self.pcf[ID][2], fill='tonexty',mode='lines',
+                hovertemplate=info2, line_color='rgba(0.75,0,0.75,1)', visible=visibility),
+                row=1, col=1 
+            )
+            fig.add_trace(
+                go.Scatter(x=ranges, y=self.pcf[ID][3], fill=None, mode='lines',
+                hovertemplate=info3, line_color='rgba(0,0.75,0.75,1)', visible=visibility),
+                row=1, col=1
+            )
+            fig.add_trace(
+                go.Scatter(x=ranges, y=self.pcf[ID][5], fill='tonexty',mode='lines',
+                hovertemplate=info4, line_color='rgba(0,0.75,0.75,1)', visible=visibility),
+                row=1, col=1 
+            )
+
+            fig.add_trace(go.Bar(x=['DN & DP'], y = [nofD], name='DN & DP', marker_color='rgba(0.75,0.75,0.75,1)', hovertemplate=infobar, visible=visibility), row=2, col=1)
+            fig.add_trace(go.Bar(x=['N+G-'], y = [nofN], name='N+G-', marker_color='rgba(0.75,0,0.75,1)', hovertemplate=infobar, visible=visibility), row=2, col=1)
+            fig.add_trace(go.Bar(x=['N-G+'], y = [nofG], name='N-G+', marker_color='rgba(0,0.75,0.75,1)', hovertemplate=infobar, visible=visibility), row=2, col=1)
+
+            colors3d = np.array(['rgba(0.75,0.75,0.75,1)' for _ in range(len(xyz))])
+            colors3d[pop == 'N+G-'] = 'rgba(0.75,0,0.75,1)'
+            colors3d[pop == 'N-G+'] = 'rgba(0,0.75,0.75,1)'
+            text3d = np.array(['<b>DN or DP</b>' for _ in range(len(xyz))])
+            text3d[pop == 'N+G-'] = '<b>N+G-</b>'
+            text3d[pop == 'N-G+'] = '<b>N-G+</b>'
+            fig.add_trace(
+                go.Scatter3d(x=xyz[:,0],y=xyz[:,1],z=xyz[:,2], mode='markers',
+                hovertext=text3d,
+                hovertemplate=info3d,
+                visible=visibility,
+                marker=dict(
+                size=50/len(xyz)**(1/3),
+                color=colors3d,
+                line=dict(
+                    color='black',
+                    width=1
+                )
+                )),
+                row=1, col=2
+            )
+
+            step = dict(method = 'update',
+                        args = [{'visible': [False]*len(IDs)*8}, 
+                                {'title': "Organoid ID = "+str(i+1)+", Number of cells = "+str(len(xyz))}]
+                                , label=str(i+1),)
+            for j in range(8):
+                step['args'][0]['visible'][i*8+j] = True
+            steps.append(step)
+
+        fig.update_layout(height=600, width=900, title="Organoid ID = "+str(1)+", Number of cells = "+str(len(self.id[self.id == IDs[0]])), paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)',showlegend=False)
+        
+        fig.update_layout({'xaxis':{'title_text':'distances','linecolor':'black'},
+                        'yaxis':{'title_text':'PCF','linecolor':'black'},
+                        'xaxis2':{'title_text':'cell type','linecolor':'black'},
+                        'yaxis2':{'range': [0, 100],'dtick': 20, 'title_text':'proportions','linecolor':'black'},}
+        )
+
+        fig.update_layout(scene = dict(xaxis = dict(showbackground=False,showticklabels=False,visible=False,range=[np.min(xyz),np.max(xyz)]),
+                                    yaxis = dict(showbackground=False,showticklabels=False,visible=False,range=[np.min(xyz),np.max(xyz)]),
+                                    zaxis = dict(showbackground=False,showticklabels=False,visible=False,range=[np.min(xyz),np.max(xyz)])))
+
+        sliders = [{'steps': steps}]
+        fig.layout.sliders = sliders
+
+        if file == None:
+            fig.show()
+        else:
+            fig.write_html(file)
+
+
+    def propPlot(self, ID):
+        plt.rc('font', size=14)
+        pop = self.pop[self.id == ID]
+        nofD = len(pop[(pop == 'N-G-') | (pop == 'N+G+')])/len(pop)*100
+        nofN = len(pop[pop == 'N+G-'])/len(pop)*100
+        nofG = len(pop[pop == 'N-G+'])/len(pop)*100
+        plt.bar(['N+G+ & \n N-G-', 'N+G-', 'N-G+'], [nofD, nofN, nofG], color=['gray', 'm', 'c'], edgecolor='k')
+        for i, v in enumerate([nofD, nofN, nofG]):
+            plt.text(i, v+5, str(int(np.round(v)))+'%', color='black', fontweight='bold', ha='center')
+        plt.ylim([0,100])
+        plt.ylabel('Proportions')
+        ticks = [0,20,40,60,80,100]
+        plt.yticks(ticks, [str(x)+'%' for x in ticks])
