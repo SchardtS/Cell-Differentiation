@@ -7,7 +7,7 @@ from shapely.geometry import Polygon, Point
 import matplotlib as mpl
 import matplotlib.cm as cm
 from Parameters import Parameters
-from matplotlib.animation import FuncAnimation
+from matplotlib.animation import FuncAnimation, PillowWriter
 import networkx as nx
 from scipy.spatial import Delaunay
 import itertools
@@ -264,7 +264,7 @@ class Organoid(Parameters):
         plt.xlabel('Time')
         plt.ylabel('Concentrations')
 
-    def pcf(self, ls = 'solid', lw = 2, plot = True):
+    def pcf(self, ls = 'solid', lw = 2, plot = True, font_size=14):
         x = np.zeros(self.nofCells)
         x[self.N > self.G] = 1
         maxdist = int(np.max(self.GraphDist))
@@ -293,13 +293,12 @@ class Organoid(Parameters):
                 self.pcf_G[i-1] = len(dist_G[dist_G==i])/len(self.GraphDist[self.GraphDist==i])/rho_G
 
         if plot == True:
-            plt.rc('font', size=14)
+            plt.rc('font', size=font_size)
             plt.plot(range(1,maxdist+1), self.pcf_N, color='m', lw = lw, ls = ls)
             plt.plot(range(1,maxdist+1), self.pcf_G, color='c', lw = lw, ls = ls)
             plt.axhline(1, ls='dashed', color='k')
-        
-        if legend == True:
-            plt.legend()
+            plt.xlabel('Distance')
+            plt.ylabel('$\\rho_n, \\rho_g$')
 
     def moran(self):
         x = np.zeros(self.N.shape)
@@ -388,6 +387,46 @@ class Organoid(Parameters):
 
         return
 
+    def saveGIF(self, directory = '', frames = None, fps = 50, mode = None):
+
+        fig = plt.figure()
+        bmin = min(min(self.xy[:,0]),min(self.xy[:,1])) - 1.5*self.r_max
+        bmax = max(max(self.xy[:,0]),max(self.xy[:,1])) + 1.5*self.r_max
+
+
+        def update(i):
+            plt.cla()
+
+            org = Organoid()
+            org.nofCells = len(self.Data[i][0])
+            org.xy = self.Data[i][0]
+            org.r = self.Data[i][1]
+            org.N = self.Data[i][2]
+            org.G = self.Data[i][3]
+            org.dist = cdist(org.xy, org.xy)
+
+            if mode == 'NANOG':
+                org.cellPlot(org.N, size=1000/self.nofCells, bounds=[min(self.N),max(self.N)], radius='mean')
+            if mode == 'GATA6':
+                org.cellPlot(org.G, size=1000/self.nofCells, bounds=[min(self.G),max(self.G)], radius='mean')
+            else:
+                org.cellPlot(size=1000/self.nofCells,radius='mean')
+            plt.xlim(bmin, bmax)
+            plt.ylim(bmin, bmax)
+            plt.gca().set_adjustable("box")
+            return
+
+        if frames == None:
+            frames = len(self.Data)
+        else:
+            frames = np.unique(np.linspace(0, len(self.Data)-1, frames, dtype=int))
+
+        ani = FuncAnimation(fig, update, frames=frames)
+        writer = PillowWriter(fps=fps)
+        ani.save(directory + '/NANOG.gif', writer=writer)
+
+        return
+
     def evolution(self, T = 0, file = None, mode = 'transcription + geometry'):
         if T != 0:
             self.T = T       
@@ -409,7 +448,7 @@ class Organoid(Parameters):
             for i in range(N):
                 self.t += self.dt
                 self.transcription()
-                #self.collectData()
+                self.collectData()
                 
         if mode == 'transcription + geometry':
             for i in range(N):

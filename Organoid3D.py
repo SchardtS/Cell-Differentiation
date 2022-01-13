@@ -70,7 +70,7 @@ class Organoid(Parameters):
 
         # New radius based on the area of the mother cell being two times that of the daughter cells
         # Use volume in 3D instead
-        r_new = self.r[indices]/2**(1/2)
+        r_new = self.r[indices]/2**(1/3)
         N_new = self.N[indices]/2
         G_new = self.G[indices]/2
 
@@ -254,7 +254,6 @@ class Organoid(Parameters):
             plt.plot(range(1,maxdist+1), self.pcf_N, color='m', lw = lw, ls = ls, label = 'N+G-')
             plt.plot(range(1,maxdist+1), self.pcf_G, color='c', lw = lw, ls = ls, label = 'N-G+')
             plt.axhline(1, ls='dashed', color='k')
-            
 
     def moran(self):
         x = np.zeros(self.N.shape)

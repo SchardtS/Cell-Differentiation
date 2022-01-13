@@ -317,7 +317,7 @@ class ExpData():
 
         steps = []
 
-        IDs = np.unique(self.id[self.stage == '48h'])
+        IDs = np.unique(self.id[self.stage == '24h'])
         for i, ID in enumerate(IDs):
             print(i+1, 'of', len(IDs))
             if i == 0:
@@ -410,14 +410,13 @@ class ExpData():
         else:
             fig.write_html(file)
 
-
     def propPlot(self, ID):
-        plt.rc('font', size=14)
+        #plt.rc('font', size=14)
         pop = self.pop[self.id == ID]
         nofD = len(pop[(pop == 'N-G-') | (pop == 'N+G+')])/len(pop)*100
         nofN = len(pop[pop == 'N+G-'])/len(pop)*100
         nofG = len(pop[pop == 'N-G+'])/len(pop)*100
-        plt.bar(['N+G+ & \n N-G-', 'N+G-', 'N-G+'], [nofD, nofN, nofG], color=['gray', 'm', 'c'], edgecolor='k')
+        plt.bar(['DN & DP', 'N+G-', 'N-G+'], [nofD, nofN, nofG], color=['gray', 'm', 'c'], edgecolor='k')
         for i, v in enumerate([nofD, nofN, nofG]):
             plt.text(i, v+5, str(int(np.round(v)))+'%', color='black', fontweight='bold', ha='center')
         plt.ylim([0,100])
