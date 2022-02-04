@@ -1,3 +1,4 @@
+from math import gamma
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -35,11 +36,12 @@ class Organoid(Parameters):
         self.r0 = self.r
         self.t0 = np.zeros(self.nofCells)
         N0 = self.r_N/self.gamma_N*3/4
-        G0 = self.r_N/self.gamma_N*3/4
+        G0 = self.r_G/self.gamma_G*3/4
         self.u = np.append(np.random.normal(N0, N0*0.01, self.nofCells),
-                            np.random.normal(G0, G0*0.01, self.nofCells))
+                           np.random.normal(G0, G0*0.01, self.nofCells))
         self.N = self.u[:self.nofCells]
         self.G = self.u[self.nofCells:]
+
         self.Data = []
         self.dist = cdist(self.xy, self.xy)
         
@@ -159,10 +161,132 @@ class Organoid(Parameters):
         for i in range(self.nofCells):
             for j in range(self.nofCells):
                 self.GraphDist[i,j] = dist_dict[i][j]
- 
+
         #self.GraphDist = np.floor(self.dist/np.mean(2*self.r))
-  
+
+
+    def communication(self):
+        d_ij = np.maximum(self.GraphDist-1, 0)
+        #scaling = self.q**(d_ij)
+        scaling = self.GraphDist[:]
+        scaling[scaling > 1] = 0
+        scaling[scaling < 1] = -2
+        self.A = (scaling.T/max(scaling.sum(0))).T
+        #self.A = (scaling.T/scaling.sum(0)).T
+        #np.fill_diagonal(self.A, 0)
+
+    def signal(self):
+        s_crit = (self.r_N*self.gamma_G*np.exp(-self.eps_N) - self.r_G*self.gamma_N*np.exp(-self.eps_G)) / \
+                 (self.r_G*self.gamma_N*np.exp(-self.eps_G)*np.exp(-self.eps_S)*np.exp(-self.eps_GS))
+
+        d_ij = np.maximum(self.GraphDist-1, 0)
+        scaling = self.q**(d_ij)
+        np.fill_diagonal(scaling, 0)
+
+        s_crit = 0.1
+        val = (s_crit - (self.gamma_G/self.r_G)*self.G*s_crit)*scaling
+        #val = (s_crit + (self.gamma_N/self.r_N*self.N - self.gamma_G/self.r_G*self.G)*s_crit)*scaling
+        np.fill_diagonal(val, 0)
+        #self.S = val.sum(1)/max(scaling.sum(1))
+        self.S = val.sum(1)/scaling.sum(1)
+
     def transcription(self):
+        rhs = np.empty(self.nofCells*2)
+
+        a = np.exp(-self.eps_G)
+        b = np.exp(-self.eps_N)
+        c = np.exp(-self.eps_S)
+        d = np.exp(-self.eps_GS)
+
+        #self.signal()
+        self.communication()
+        self.S = .5*np.dot(self.A, self.N)
+
+        pN =        (b*self.N)        /(1 + a*self.G*(1+d*c*self.S) + b*self.N + c*self.S)
+        pG = (a*self.G)*(1+d*c*self.S)/(1 + a*self.G*(1+d*c*self.S) + b*self.N + c*self.S)
+
+        rhs[:self.nofCells] = self.r_N*pN - self.gamma_N*self.N
+        rhs[self.nofCells:] = self.r_G*pG - self.gamma_G*self.G
+                               
+        self.u = self.u + self.dt*rhs
+        self.N = self.u[:self.nofCells]
+        self.G = self.u[self.nofCells:]
+
+    """ def transcription(self):
+        gamma = 10
+        r = 1
+
+        x = np.exp(-1)
+        eta_x = np.exp(1)
+
+        p = lambda f: eta_x*x/(f + eta_x*x)
+
+        n0 = p(1)*r/gamma
+        g0 = p(1)*r/gamma
+        s0 = p(1)*r/gamma
+
+        eta_n = np.exp(6)
+        eta_g = np.exp(6)
+        eta_s = np.exp(6)
+
+        eta_nx = np.exp(4)
+        eta_gx = np.exp(2)
+        eta_sx = np.exp(2)
+
+        d_ij = np.maximum(self.GraphDist-1, 0)
+        scaling = self.q**(d_ij)
+        np.fill_diagonal(scaling, 0)
+        s_crit = .036*3
+        val = np.empty(self.nofCells)
+        val[self.G > 0.05] = np.exp(-3.3)
+        val[self.G <= 0.05] = np.exp(-10)
+        #val = (s_crit - (gamma/r)*self.G*s_crit)*scaling
+        np.fill_diagonal(val, 0)
+        s = val.sum(1)/max(scaling.sum(1))
+        self.s = s
+
+        f_n = lambda n, g: (1 + eta_n*n)*(1 + eta_g*g)*(1 + eta_s*s)/(1 + eta_n*eta_nx*n)
+        f_g = lambda n, g: (1 + eta_n*n)*(1 + eta_g*g)*(1 + eta_s*s)/(1 + eta_g*eta_gx*g)/(1 + eta_s*eta_sx*s)
+        p = lambda f: eta_x*x/(f + eta_x*x)
+
+        self.u[:self.nofCells] = self.N + self.dt*(r*p(f_n(self.N,self.G)) - gamma*self.N)
+        self.u[self.nofCells:] = self.G + self.dt*(r*p(f_g(self.N,self.G)) - gamma*self.G)
+        self.N = self.u[:self.nofCells]
+        self.G = self.u[self.nofCells:] """
+
+    """ def transcription(self):
+        rhs = np.empty(self.nofCells*3)
+
+        a_n = 2.5
+        a_ns = 0.5
+        a_g = 3
+        a_s = 3
+
+        d_ij = np.maximum(self.GraphDist-1, 0)
+        #distance = 50
+        #d_ij[d_ij <= distance] = 1
+        #d_ij[d_ij > distance] = 0
+
+        #S = np.empty(self.nofCells)
+        #for i in range(self.nofCells):
+        #    S[i] = sum(self.S*d_ij[:,i])/(sum(d_ij[:,i]))
+
+        scaling = self.q**(d_ij)
+        np.fill_diagonal(scaling, 0)
+        val = self.S*scaling#*(1-self.q)/self.q
+        np.fill_diagonal(val, 0)
+        S = val.sum(1)/max(scaling.sum(1))
+
+        rhs[:self.nofCells] = a_n/(1 + self.G**2) + a_ns/(1 + S**2) - self.N
+        rhs[self.nofCells:2*self.nofCells] = a_g/(1 + self.N**2) - self.G
+        rhs[2*self.nofCells:] = a_s/(1 + self.G**2) - self.S
+
+        self.u = self.u + 10*self.dt*rhs
+        self.N = self.u[:self.nofCells]
+        self.G = self.u[self.nofCells:2*self.nofCells]
+        self.S = self.u[2*self.nofCells:] """
+
+    """ def transcription(self):
         rhs = np.empty(self.nofCells*2)
 
         a = np.exp(-self.eps_N)
@@ -185,8 +309,8 @@ class Organoid(Parameters):
                                
         self.u = self.u + self.dt*rhs
         self.N = self.u[:self.nofCells]
-        self.G = self.u[self.nofCells:]
-                                      
+        self.G = self.u[self.nofCells:] """
+                                   
     def cellPlot(self, *Val, size = None, bounds = None, radius = 'individual'):
         if size == None:
             size = 1000/len(self.xy)

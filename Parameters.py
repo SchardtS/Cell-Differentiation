@@ -1,8 +1,8 @@
 class Parameters:
     def __init__(self):
         #### time parameters ####
-        self.T = 24                                # Time
-        self.nofSteps = 3000                      # Number of timesteps
+        self.T = 24                               # Time
+        self.nofSteps = 3000                       # Number of timesteps
               
         #### geometry parameters ####
         self.dt = self.T/(self.nofSteps - 1)       # timestep
@@ -14,20 +14,21 @@ class Parameters:
         
         #### transcription parameters ####
         # energy differences
-        self.eps_N = -6
-        self.eps_G = -7
+        self.eps_N = -7
+        self.eps_G = -6
         self.eps_S = -2
         self.eps_NS = -2
+        self.eps_GS = -2
 
         # decay rates
-        self.gamma_N = 100
-        self.gamma_G = 100
-        self.gamma_S = 100
+        self.gamma_N = 10
+        self.gamma_G = 10
+        self.gamma_S = 10
 
         # reproduction rates
-        self.r_N = 10
-        self.r_G = 10
-        self.r_S = 10
+        self.r_N = 1
+        self.r_G = 1
+        self.r_S = 1
         
         # signal range
         self.q = 0.7
