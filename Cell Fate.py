@@ -7,9 +7,9 @@ import numpy as np
 org = Organoid()
 
 # Run simulation for specified amount of time. If not specified its 24 hours
-org.nofSteps = 3000
+org.nofSteps = 300
 org.dt = org.T/(org.nofSteps - 1)
-org.evolution(T=200, file = 'Organoid_mid.csv', mode='transcription')
+org.evolution(T=2000, file = 'Organoid_mid.csv', mode='transcription')
 
 # Plot the result
 org.cellPlot(org.N)

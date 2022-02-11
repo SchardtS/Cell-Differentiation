@@ -13,6 +13,9 @@ import networkx as nx
 from scipy.spatial import Delaunay
 import itertools
 
+def norm(x):
+    return sum(x**2)**(1/2)
+
 
 class Organoid(Parameters):
     def __init__(self):
@@ -167,28 +170,10 @@ class Organoid(Parameters):
 
     def communication(self):
         d_ij = np.maximum(self.GraphDist-1, 0)
-        #scaling = self.q**(d_ij)
-        scaling = self.GraphDist[:]
-        scaling[scaling > 1] = 0
-        scaling[scaling < 1] = -2
+        scaling = self.q**(d_ij)
         self.A = (scaling.T/max(scaling.sum(0))).T
         #self.A = (scaling.T/scaling.sum(0)).T
-        #np.fill_diagonal(self.A, 0)
-
-    def signal(self):
-        s_crit = (self.r_N*self.gamma_G*np.exp(-self.eps_N) - self.r_G*self.gamma_N*np.exp(-self.eps_G)) / \
-                 (self.r_G*self.gamma_N*np.exp(-self.eps_G)*np.exp(-self.eps_S)*np.exp(-self.eps_GS))
-
-        d_ij = np.maximum(self.GraphDist-1, 0)
-        scaling = self.q**(d_ij)
-        np.fill_diagonal(scaling, 0)
-
-        s_crit = 0.1
-        val = (s_crit - (self.gamma_G/self.r_G)*self.G*s_crit)*scaling
-        #val = (s_crit + (self.gamma_N/self.r_N*self.N - self.gamma_G/self.r_G*self.G)*s_crit)*scaling
-        np.fill_diagonal(val, 0)
-        #self.S = val.sum(1)/max(scaling.sum(1))
-        self.S = val.sum(1)/scaling.sum(1)
+        np.fill_diagonal(self.A, 0)
 
     def transcription(self):
         rhs = np.empty(self.nofCells*2)
@@ -198,9 +183,10 @@ class Organoid(Parameters):
         c = np.exp(-self.eps_S)
         d = np.exp(-self.eps_GS)
 
-        #self.signal()
+        #s_crit = (self.r_N*self.gamma_G*np.exp(-self.eps_N) - self.r_G*self.gamma_N*np.exp(-self.eps_G)) / \
+        #         (self.r_G*self.gamma_N*np.exp(-self.eps_G)*np.exp(-self.eps_S)*np.exp(-self.eps_GS))
         self.communication()
-        self.S = .5*np.dot(self.A, self.N)
+        self.S = np.dot(self.A, self.N)
 
         pN =        (b*self.N)        /(1 + a*self.G*(1+d*c*self.S) + b*self.N + c*self.S)
         pG = (a*self.G)*(1+d*c*self.S)/(1 + a*self.G*(1+d*c*self.S) + b*self.N + c*self.S)
@@ -310,7 +296,57 @@ class Organoid(Parameters):
         self.u = self.u + self.dt*rhs
         self.N = self.u[:self.nofCells]
         self.G = self.u[self.nofCells:] """
-                                   
+
+    def angle_sorted_neighbors(self, i):
+        indices = np.where((self.dist[i,:] < self.r[i] + self.r) & (self.dist[i,:] != 0))[0]
+        diff = self.xy[i,:] - self.xy[indices,:]
+    
+        angles = np.arctan2(diff[:,1],diff[:,0])
+        sorted_indices = np.array([ind for _, ind in sorted(zip(angles, indices))])
+
+        return sorted_indices
+
+    def circle_intersections(self, i):
+        indices = self.angle_sorted_neighbors(i)
+        intersections = []
+        for j in indices:
+            d = self.dist[i,j]
+            a = (self.r[i]**2 - self.r[j]**2 + d**2)/(2*d)
+            b = (self.r[i]**2 - a**2)**(1/2)
+            d12 = self.xy[j,:] - self.xy[i,:]
+            d12_orth = np.array([d12[1],-d12[0]]).T
+            xy1 = self.xy[i,:] + a*d12/d - b*d12_orth/d
+            xy2 = self.xy[i,:] + a*d12/d + b*d12_orth/d
+            
+            intersections.append(xy1)
+            intersections.append(xy2)
+
+        return np.array(intersections)
+
+    def polygon_corners(intersections):
+        corners = []
+        edges = {}
+        for i in range(0,len(intersections),2):
+            j = (i+2) % len(intersections)
+            x1,y1 = intersections[i,:]
+            x2,y2 = intersections[i+1,:]
+            x3,y3 = intersections[j,:]
+            x4,y4 = intersections[j+1,:]
+            
+            beta = ((x3 - x1)*(y2 - y1) - (y3 - y1)*(x2 - x1)) / \
+                   ((y4 - y3)*(x2 - x1) - (x4 - x3)*(y2 - y1))
+        
+            alpha = (x3 - x1)/(x2 - x1) +  (x4 - x3)/(x2 - x1)*beta
+            
+            if alpha >= 0 and alpha <= 1 and beta >= 0 and beta <= 1:
+                corners.append(np.array([x1,y1]) + alpha*np.array([x2-x1,y2-y1]))
+                edges
+            else:
+                corners.append(np.array([x1,y1])) 
+                corners.append(np.array([x4,y4]))
+                
+        return np.array(corners)
+
     def cellPlot(self, *Val, size = None, bounds = None, radius = 'individual'):
         if size == None:
             size = 1000/len(self.xy)
