@@ -71,7 +71,9 @@ class Organoid(Parameters):
 
         # Choose where division will randomly occur
         random_numbers = np.random.rand(self.nofCells)
-        indices = np.where(random_numbers < Prob)
+        indices = np.where(random_numbers < Prob)[0]
+        if self.nofCells + len(indices) >= self.maxCells:
+            indices = indices[:self.maxCells-self.nofCells]
 
         # New radius based on the area of the mother cell being two times that of the daughter cells
         # Use volume in 3D instead
@@ -167,13 +169,19 @@ class Organoid(Parameters):
 
         #self.GraphDist = np.floor(self.dist/np.mean(2*self.r))
 
-
     def communication(self):
-        d_ij = np.maximum(self.GraphDist-1, 0)
-        scaling = self.q**(d_ij)
-        self.A = (scaling.T/max(scaling.sum(0))).T
-        #self.A = (scaling.T/scaling.sum(0)).T
-        np.fill_diagonal(self.A, 0)
+        if self.signal == 'dispersion':
+            d_ij = np.maximum(self.GraphDist-1, 0)
+            scaling = self.q**(d_ij)
+            np.fill_diagonal(scaling, 0)
+            self.A = (scaling.T/max(scaling.sum(0))).T
+        elif self.signal == 'neighbor':
+            scaling = self.GraphDist.copy()
+            #scaling[scaling <= 1] = 1
+            scaling[scaling != 1] = 0
+            self.A = (scaling.T/scaling.sum(1)).T
+        else:
+            print('ERROR: signal parameter must be either \'neighbor\' or \'dispersion\'')
 
     def transcription(self):
         rhs = np.empty(self.nofCells*2)
@@ -183,9 +191,6 @@ class Organoid(Parameters):
         c = np.exp(-self.eps_S)
         d = np.exp(-self.eps_GS)
 
-        #s_crit = (self.r_N*self.gamma_G*np.exp(-self.eps_N) - self.r_G*self.gamma_N*np.exp(-self.eps_G)) / \
-        #         (self.r_G*self.gamma_N*np.exp(-self.eps_G)*np.exp(-self.eps_S)*np.exp(-self.eps_GS))
-        self.communication()
         self.S = np.dot(self.A, self.N)
 
         pN =        (b*self.N)        /(1 + a*self.G*(1+d*c*self.S) + b*self.N + c*self.S)
@@ -347,7 +352,7 @@ class Organoid(Parameters):
                 
         return np.array(corners)
 
-    def cellPlot(self, *Val, size = None, bounds = None, radius = 'individual'):
+    def cellPlot(self, *Val, size = None, bounds = None, radius = 'individual', cmap = 'cool'):
         if size == None:
             size = 1000/len(self.xy)
         
@@ -397,7 +402,7 @@ class Organoid(Parameters):
                 bounds = [min(Val), max(Val)]
             
             norm = mpl.colors.Normalize(vmin=bounds[0], vmax=bounds[1], clip=True)
-            mapper = cm.ScalarMappable(norm=norm, cmap='cool')
+            mapper = cm.ScalarMappable(norm=norm, cmap=cmap)
 
             for i in range(self.nofCells):
                 x,y = polygons[i].exterior.xy
@@ -587,16 +592,22 @@ class Organoid(Parameters):
 
         return
 
-    def evolution(self, T = 0, file = None, mode = 'transcription + geometry'):
+    def evolution(self, T = 0, file = None, mode = 'transcription + geometry', maxCells = 100000):
+        self.maxCells = maxCells
+
         if T != 0:
-            self.T = T       
-        N = int(self.T/self.dt)
+            self.T = T
+  
+        self.dt = self.T/(self.nofSteps - 1)
 
         if not hasattr(self, 'xy'):
             self.initialConditions(file = file)
+            self.dt = self.T/(self.nofSteps - 1)
         
         if mode == 'geometry':
-            for i in range(N):
+            for i in range(self.nofSteps):
+                if self.nofCells >= self.maxCells:
+                    break
                 self.t += self.dt
                 self.radiusGrowth()
                 self.cellDivision()
@@ -605,17 +616,21 @@ class Organoid(Parameters):
                 
         if mode == 'transcription':
             self.graphdistance()
-            for i in range(N):
+            self.communication()
+            for i in range(self.nofSteps):
                 self.t += self.dt
                 self.transcription()
                 self.collectData()
                 
         if mode == 'transcription + geometry':
-            for i in range(N):
+            for i in range(self.nofSteps):
+                if self.nofCells == self.maxCells:
+                    break
                 self.t += self.dt
                 self.radiusGrowth()
                 self.cellDivision()
                 self.displacement()
                 self.graphdistance()
+                self.communication()
                 self.transcription()
                 self.collectData()

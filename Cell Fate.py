@@ -1,19 +1,27 @@
 from Organoid2D import Organoid
-from ExpData import ExpData
+from ClExpData import ExpData
 import matplotlib.pyplot as plt
 import numpy as np
 
 # Instantiate organoid class
-org = Organoid()
+#org = Organoid()
 
 # Run simulation for specified amount of time. If not specified its 24 hours
-org.nofSteps = 300
-org.dt = org.T/(org.nofSteps - 1)
-org.evolution(T=2000, file = 'Organoid_mid.csv', mode='transcription')
+#org.evolution(T=100, file = 'Organoid_mid.csv', mode='transcription')
 
 # Plot the result
-org.cellPlot(org.N)
-org.timePlot()
-plt.show()
+#plt.figure()
+#org.cellPlot(org.G)
+#plt.savefig('x_to_y.pdf', transparent=True)
+#plt.savefig('x_to_y.png', transparent=True)
+
+#org.timePlot()
+#plt.show()
+#nofN = len(org.N[org.N > org.G])
+#nofG = len(org.G[org.G >= org.N])
+#print(nofN / nofG, nofN, nofG)
 
 #org.saveGIF(directory='Results', frames=1000, mode='NANOG')
+
+dat = ExpData('Data/extendedRawDataICMOrganoidsWFate.csv')
+dat.sliderPlot_HTML(file='24h_and_48h.html')

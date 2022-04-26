@@ -171,20 +171,23 @@ class Organoid(Parameters):
     def transcription(self):
         rhs = np.empty(self.nofCells*2)
 
-        a = np.exp(-self.eps_N)
-        b = np.exp(-self.eps_G)
+        b = np.exp(-self.eps_N)
+        a = np.exp(-self.eps_G)
         c = np.exp(-self.eps_S)
-        d = np.exp(-self.eps_NS)
+        d = np.exp(-self.eps_GS)
 
         d_ij = np.maximum(self.GraphDist-1, 0)         
         scaling = self.q**(d_ij)
         np.fill_diagonal(scaling, 0)
-        val = self.G*scaling#*(1-self.q)/self.q
+        val = self.N*scaling#*(1-self.q)/self.q
         np.fill_diagonal(val, 0)
         self.S = val.sum(1)/max(scaling.sum(1))
 
-        pN = (a*self.N)*(1+d*c*self.S)/(1 + a*self.N*(1+d*c*self.S) + b*self.G + c*self.S)
-        pG =        (b*self.G)        /(1 + a*self.N*(1+d*c*self.S) + b*self.G + c*self.S)
+        pN =        (b*self.N)        /(1 + a*self.G*(1+d*c*self.S) + b*self.N + c*self.S)
+        pG = (a*self.G)*(1+d*c*self.S)/(1 + a*self.G*(1+d*c*self.S) + b*self.N + c*self.S)
+
+        #pN = (a*self.N)*(1+d*c*self.S)/(1 + a*self.N*(1+d*c*self.S) + b*self.G + c*self.S)
+        #pG =        (b*self.G)        /(1 + a*self.N*(1+d*c*self.S) + b*self.G + c*self.S)
 
         rhs[:self.nofCells] = self.r_N*pN - self.gamma_N*self.N
         rhs[self.nofCells:] = self.r_G*pG - self.gamma_G*self.G
@@ -345,14 +348,15 @@ class Organoid(Parameters):
 
     def evolution(self, T = 0, file = None, mode = 'transcription + geometry'):
         if T != 0:
-            self.T = T       
-        N = int(self.T/self.dt)
+            self.T = T
+
+        self.dt = self.T/(self.nofSteps - 1)
 
         if not hasattr(self, 'xyz'):
             self.initialConditions(file = file)
         
         if mode == 'geometry':
-            for i in range(N):
+            for i in range(self.nofSteps):
                 self.t += self.dt
                 self.radiusGrowth()
                 self.cellDivision()
@@ -361,13 +365,13 @@ class Organoid(Parameters):
                 
         if mode == 'transcription':
             self.graphdistance()
-            for i in range(N):
+            for i in range(self.nofSteps):
                 self.t += self.dt
                 self.transcription()
                 #self.collectData()
                 
         if mode == 'transcription + geometry':
-            for i in range(N):
+            for i in range(self.nofSteps):
                 self.t += self.dt
                 self.radiusGrowth()
                 self.cellDivision()
