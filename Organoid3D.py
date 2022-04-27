@@ -167,6 +167,20 @@ class Organoid(Parameters):
                 self.GraphDist[i,j] = dist_dict[i][j]
 
         #self.GraphDist = np.floor(self.dist/np.mean(2*self.r))
+
+    def communication(self):
+        if self.signal == 'dispersion':
+            d_ij = np.maximum(self.GraphDist-1, 0)
+            scaling = self.q**(d_ij)
+            np.fill_diagonal(scaling, 0)
+            self.A = (scaling.T/max(scaling.sum(0))).T
+        elif self.signal == 'neighbor':
+            scaling = self.GraphDist.copy()
+            #scaling[scaling <= 1] = 1
+            scaling[scaling != 1] = 0
+            self.A = (scaling.T/scaling.sum(1)).T
+        else:
+            print('ERROR: signal parameter must be either \'neighbor\' or \'dispersion\'')
   
     def transcription(self):
         rhs = np.empty(self.nofCells*2)
@@ -176,12 +190,7 @@ class Organoid(Parameters):
         c = np.exp(-self.eps_S)
         d = np.exp(-self.eps_GS)
 
-        d_ij = np.maximum(self.GraphDist-1, 0)         
-        scaling = self.q**(d_ij)
-        np.fill_diagonal(scaling, 0)
-        val = self.N*scaling#*(1-self.q)/self.q
-        np.fill_diagonal(val, 0)
-        self.S = val.sum(1)/max(scaling.sum(1))
+        self.S = np.dot(self.A, self.N)
 
         pN =        (b*self.N)        /(1 + a*self.G*(1+d*c*self.S) + b*self.N + c*self.S)
         pG = (a*self.G)*(1+d*c*self.S)/(1 + a*self.G*(1+d*c*self.S) + b*self.N + c*self.S)
@@ -365,6 +374,7 @@ class Organoid(Parameters):
                 
         if mode == 'transcription':
             self.graphdistance()
+            self.communication()
             for i in range(self.nofSteps):
                 self.t += self.dt
                 self.transcription()
@@ -377,5 +387,6 @@ class Organoid(Parameters):
                 self.cellDivision()
                 self.displacement()
                 self.graphdistance()
+                self.communication()
                 self.transcription()
                 self.collectData()
