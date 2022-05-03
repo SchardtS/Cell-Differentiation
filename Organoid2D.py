@@ -459,11 +459,11 @@ class Organoid(Parameters):
 
         if plot == True:
             plt.rc('font', size=font_size)
-            plt.plot(range(1,maxdist+1), self.pcf_N, color='m', lw = lw, ls = ls)
-            plt.plot(range(1,maxdist+1), self.pcf_G, color='c', lw = lw, ls = ls)
+            plt.plot(range(1,maxdist+1), self.pcf_G, color='m', lw = lw, ls = ls)
+            plt.plot(range(1,maxdist+1), self.pcf_N, color='c', lw = lw, ls = ls)
             plt.axhline(1, ls='dashed', color='k')
             plt.xlabel('Distance')
-            plt.ylabel('$\\rho_n, \\rho_g$')
+            plt.ylabel('$\\rho_u, \\rho_v$')
 
     def moran(self):
         x = np.zeros(self.N.shape)
