@@ -2,7 +2,7 @@ class Parameters:
     def __init__(self):
         #### time parameters ####
         self.T = 24                               # Time
-        self.nofSteps = 3000                       # Number of timesteps
+        self.nofSteps = 3000                      # Number of timesteps
               
         #### geometry parameters ####
         self.r_max = 1                             # Maximum radius
