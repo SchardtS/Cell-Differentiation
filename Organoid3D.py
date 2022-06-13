@@ -164,7 +164,11 @@ class Organoid(Parameters):
         self.GraphDist = np.empty([self.nofCells, self.nofCells])
         for i in range(self.nofCells):
             for j in range(self.nofCells):
-                self.GraphDist[i,j] = dist_dict[i][j]
+                if i not in dist_dict.keys() or j not in dist_dict.keys():
+                    self.GraphDist[i,j] = np.inf
+                    print('Some cells are not connected to the rest of the graph')
+                else:
+                    self.GraphDist[i,j] = dist_dict[i][j]
 
         #self.GraphDist = np.floor(self.dist/np.mean(2*self.r))
 

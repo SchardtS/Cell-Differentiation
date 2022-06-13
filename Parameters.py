@@ -6,7 +6,7 @@ class Parameters:
               
         #### geometry parameters ####
         self.r_max = 1                             # Maximum radius
-        self.k = 0.5                               # Cell growth rate
+        self.k = 0.083                               # Cell growth rate
         self.F0 = 0.1                              # Force scaling
         self.alpha = 3                             # Cell stiffness
         self.sigma = 0.7                           # Don't know how to call that one
