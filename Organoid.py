@@ -105,7 +105,7 @@ class Organoid(Parameters):
                         - np.exp(self.alpha*(-2*r_exp*self.sigma)) - np.log(1 - np.exp(self.alpha*(-2*r_exp*self.sigma)))
 
             df = lambda h: self.alpha*np.exp(self.alpha*(h-2*r_exp*self.sigma))/(np.exp(-self.alpha*(h-2*r_exp*self.sigma))-1)
-            self.divDist = fsolve(f, 1.5*self.sigma*r_exp, fprime=df)
+            self.divDist = fsolve(f, 1.5*self.sigma*r_exp, fprime=df)[0]
 
     def cellDivision(self):
         if 'division' in self.ignore:
@@ -132,7 +132,7 @@ class Organoid(Parameters):
                 G_new = self.G[indices]/2
 
                 # Distance between the two daughter cells
-                dist = np.random.normal(self.divDist/2, self.divDist/2*0.1, len(indices))
+                dist = np.random.normal(self.divDist/2, self.divDist/2*0.0, len(indices))
 
                 if self.dim == 2:
                     # Angles of cell division
@@ -186,6 +186,7 @@ class Organoid(Parameters):
             
                 # Change new number of cells
                 self.nofCells = len(self.r)
+                print(cdist(self.pos, self.pos))
 
     def displacement(self):
         if 'displacement' in self.ignore:
@@ -606,10 +607,10 @@ class Organoid(Parameters):
 
         return
 
-    def evolution(self, T = 0, file = None, dim = 2, ignore = [], maxCells = 100000):
+    def evolution(self, T = None, file = None, dim = 2, ignore = [], maxCells = 100000):
         self.maxCells = maxCells
 
-        if T != 0:
+        if T != None:
             self.T = T
   
         self.dt = self.T/(self.nofSteps - 1)
