@@ -9,9 +9,8 @@ import numpy as np
 org = Organoid()
 
 # Run simulation for specified amount of time. If not specified its 24 hours
-# org.evolution(T=10, file = 'Organoid_mid.csv', mode='transcription')
-org.evolution(T=50, dim=2, ignore=['transcription'])
-print(org.divDist)
+org.evolution(T=234., dim=3, ignore=['transcription'])
+print(org.divDist, org.nofCells)
 
 # Plot the result
 plt.figure()
@@ -19,4 +18,4 @@ org.cellPlot(radius='mean')
 plt.show()
 
 # Save animation
-org.saveAnim(directory='Results', frames= 100)
+#org.saveAnim(directory='Results', frames= 1000)

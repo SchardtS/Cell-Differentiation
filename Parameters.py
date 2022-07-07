@@ -2,12 +2,12 @@ class Parameters:
     def __init__(self):
         #### time parameters ####
         self.T = 24                               # Time
-        self.nofSteps = 3000                      # Number of timesteps
+        self.nofSteps = 5000                      # Number of timesteps
               
         #### geometry parameters ####
         self.r_max = 1                             # Maximum radius
         self.k = 0.083                               # Cell growth rate
-        self.F0 = 0.1                              # Force scaling
+        self.F0 = 0.01                             # Force scaling
         self.alpha = 3                             # Cell stiffness
         self.sigma = 0.7                           # Don't know how to call that one
         

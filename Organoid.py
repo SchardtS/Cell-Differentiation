@@ -35,14 +35,14 @@ class Organoid(Parameters):
     def initialConditions(self, dim, file = None):
         if file == None:
             if dim == 2:
-                self.pos = np.array([[0,0]])
+                self.pos = np.array([[0,0]], dtype=float)
                 self.dim = 2
             
             if dim == 3:
-                self.pos = np.array([[0,0,0]])
+                self.pos = np.array([[0,0,0]], dtype=float)
                 self.dim = 3
 
-            self.r = np.array([0.75])
+            self.r = np.array([0.75], dtype=float)
             
         else:
             Data = pd.read_csv(file)
@@ -57,7 +57,7 @@ class Organoid(Parameters):
         self.nofCells = len(self.r)
         self.t = 0
         self.r0 = self.r
-        self.t0 = np.zeros(self.nofCells)
+        self.t0 = np.zeros(self.nofCells, dtype=float)
         N0 = self.r_N/self.gamma_N*3/4
         G0 = self.r_G/self.gamma_G*3/4
         self.u = np.append(np.random.normal(N0, N0*0.01, self.nofCells),
@@ -132,7 +132,7 @@ class Organoid(Parameters):
                 G_new = self.G[indices]/2
 
                 # Distance between the two daughter cells
-                dist = np.random.normal(self.divDist/2, self.divDist/2*0.0, len(indices))
+                dist = np.random.normal(self.divDist/2, self.divDist/2*0.1, len(indices))
 
                 if self.dim == 2:
                     # Angles of cell division
@@ -186,7 +186,6 @@ class Organoid(Parameters):
             
                 # Change new number of cells
                 self.nofCells = len(self.r)
-                print(cdist(self.pos, self.pos))
 
     def displacement(self):
         if 'displacement' in self.ignore:
@@ -228,6 +227,7 @@ class Organoid(Parameters):
                 Force = np.array([np.sum(Fx, axis=1), np.sum(Fy, axis=1), np.sum(Fz, axis=1)]).T
 
             self.pos = self.pos + self.dt*Force# + 0.1*np.random.normal(0, self.dt**(1/2), self.pos.shape)
+
         
     def graphdistance(self):
         if 'transcription' in self.ignore:
@@ -264,7 +264,7 @@ class Organoid(Parameters):
                 scaling = self.GraphDist.copy()
                 #scaling[scaling <= 1] = 1
                 scaling[scaling != 1] = 0
-                self.A = (scaling.T/scaling.sum(1)).T
+                self.A = (scaling.T/scaling.sum(0)).T
             else:
                 print('ERROR: signal parameter must be either \'neighbor\' or \'dispersion\'')
 
@@ -626,6 +626,7 @@ class Organoid(Parameters):
         if 'displacement' in self.ignore and 'division' in self.ignore:
             if (self.dim == 2 and self.nofCells >= 3) or (self.dim == 3 and self.nofCells >= 4):
                 self.graphdistance()
+                self.communication()
         for i in range(self.nofSteps):
             if self.nofCells == self.maxCells:
                 break
@@ -634,10 +635,12 @@ class Organoid(Parameters):
             self.cellDivision()
             if self.nofCells >= 2:
                 self.displacement()
-            if 'displacement' not in self.ignore or 'division' not in self.ignore:
-                if (self.dim == 2 and self.nofCells >= 3) or (self.dim == 3 and self.nofCells >= 4):
+            if (self.dim == 2 and self.nofCells >= 3) or (self.dim == 3 and self.nofCells >= 4):
+                if 'displacement' not in self.ignore or 'division' not in self.ignore:
                     self.graphdistance()
                     self.communication()
-                    self.transcription()
+                
+                self.transcription()
+
             self.collectData()
 
