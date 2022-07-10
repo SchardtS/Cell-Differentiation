@@ -227,8 +227,7 @@ class Organoid(Parameters):
                 Force = np.array([np.sum(Fx, axis=1), np.sum(Fy, axis=1), np.sum(Fz, axis=1)]).T
 
             self.pos = self.pos + self.dt*Force# + 0.1*np.random.normal(0, self.dt**(1/2), self.pos.shape)
-
-        
+      
     def graphdistance(self):
         if 'transcription' in self.ignore:
             return
@@ -412,8 +411,15 @@ class Organoid(Parameters):
             fig = plt.figure()
             ax = fig.add_subplot(projection='3d')
             size = 30000/len(self.pos)*self.r
+
+            c = np.full((self.nofCells,) + (4,), [0,1,1,1])
+            c[self.pos[:,0] < 0, -1] = 0
+
+            #pos = self.pos[(self.pos[:,0] < 0) | (self.pos[:,1] < 0) | (self.pos[:,2] < 0)]
+            #size = size[(self.pos[:,0] < 0) | (self.pos[:,1] < 0) | (self.pos[:,2] < 0)]
             if Val == ():
-                ax.scatter(self.pos[:,0], self.pos[:,1], self.pos[:,2], c = 'k', s=size)
+                #ax.scatter(pos[:,0], pos[:,1], pos[:,2], c = 'k', s=size, depthshade=False)
+                ax.scatter(self.pos[:,0], self.pos[:,1], self.pos[:,2], c = c, s=size)
 
             else: 
                 ax.scatter(self.pos[:,0], self.pos[:,1], self.pos[:,2], c=Val, cmap = 'cool', s=size)
