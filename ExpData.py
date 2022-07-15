@@ -22,13 +22,11 @@ class ExpData():
         self.moran = {}
         self.GraphDist = {}
 
-
     def info(self, ID):
         print('Organoid', ID, 'is', self.stage[self.id == ID][0], 'old')
         print('Organoid', ID, 'consists of', len(self.id[self.id == ID]), 'cells')
         print('Organoid', ID, 'consists of', len(self.id[(self.id == ID) & (self.pop == 'N+G-')]), 'NANOG cells')
         print('Organoid', ID, 'consists of', len(self.id[(self.id == ID) & (self.pop == 'N-G+')]), 'GATA6 cells')
-
 
     def graphdistance(self, ID):
         if not ID in self.GraphDist:   
@@ -409,6 +407,27 @@ class ExpData():
             fig.show()
         else:
             fig.write_html(file)
+
+    def combinedPlot(self, stage, sample_size, file=None):
+        for ID in np.unique(self.id):
+            if stage in self.stage[self.id == ID]:
+                self.pcf_bounds(ID, sample_size, plot = False)
+                
+                #ranges = list(range(1,len(self.pcf[ID][0])+1))
+                ranges = np.linspace(0, 1, len(self.pcf[ID][0]))
+                plt.fill_between(ranges, self.pcf[ID][0], self.pcf[ID][2], color='m', alpha=0.05, label='NANOG')
+                plt.fill_between(ranges, self.pcf[ID][3], self.pcf[ID][5], color='c', alpha=0.05, label='GATA6')
+                #plt.plot(ranges, self.pcf[ID][1], 'm', lw=2)
+                #plt.plot(ranges, self.pcf[ID][4], 'c', lw=2)
+
+        plt.xlabel('Normalized distance')
+        plt.ylabel('$\\rho$')
+        plt.legend(['NANOG', 'GATA6'])
+
+        if file == None:
+            plt.show()
+        else:
+            plt.savefig(file)
 
     def propPlot(self, ID):
         #plt.rc('font', size=14)
