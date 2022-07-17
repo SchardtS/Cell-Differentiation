@@ -9,7 +9,7 @@ import matplotlib as mpl
 import matplotlib.cm as cm
 from Parameters import Parameters
 from matplotlib.animation import FuncAnimation, PillowWriter
-import networkx as nx
+import igraph as ig
 from scipy.spatial import Delaunay
 import itertools
 from scipy.optimize import fsolve
@@ -232,21 +232,37 @@ class Organoid(Parameters):
         if 'transcription' in self.ignore:
             return
         else:
-            Gr = nx.Graph()
-            self.dist = cdist(self.pos, self.pos)
             rr = self.r + self.r[:,None]
             tri = Delaunay(self.pos)
-                                
+            A = np.zeros([self.nofCells, self.nofCells])
             for nodes in tri.simplices:
                 for path in list(itertools.combinations(nodes, 2)):
                     if self.dist[path[0],path[1]] < rr[path[0],path[1]]:
-                        nx.add_path(Gr, path)
+                        A[path[0],path[1]] = 1
+                        A[path[1],path[0]] = 1
 
-            dist_dict = dict(nx.all_pairs_dijkstra_path_length(Gr))
-            self.GraphDist = np.empty([self.nofCells, self.nofCells])
-            for i in range(self.nofCells):
-                for j in range(self.nofCells):
-                    self.GraphDist[i,j] = dist_dict[i][j]
+            if self.signal == 'neighbor':
+                self.GraphDist = A
+            if self.signal == 'dispersion':
+                G = ig.Graph.Adjacency(A, mode="undirected")
+                self.GraphDist = np.array(G.shortest_paths())
+#
+            #Gr = nx.Graph()
+            #self.dist = cdist(self.pos, self.pos)
+            #rr = self.r + self.r[:,None]
+            #tri = Delaunay(self.pos)
+            #                    
+            #for nodes in tri.simplices:
+            #    for path in list(itertools.combinations(nodes, 2)):
+            #        if self.dist[path[0],path[1]] < rr[path[0],path[1]]:
+            #            nx.add_path(Gr, path)
+#
+            #dist_dict = dict(nx.all_pairs_shortest_path_length(Gr))
+            ##dist_dict = dict(nx.all_pairs_dijkstra_path_length(Gr))
+            #self.GraphDist = np.empty([self.nofCells, self.nofCells])
+            #for i in range(self.nofCells):
+            #    for j in range(self.nofCells):
+            #        self.GraphDist[i,j] = dist_dict[i][j]
 
             #self.GraphDist = np.floor(self.dist/np.mean(2*self.r))
 
@@ -260,10 +276,9 @@ class Organoid(Parameters):
                 np.fill_diagonal(scaling, 0)
                 self.A = (scaling.T/max(scaling.sum(0))).T
             elif self.signal == 'neighbor':
-                scaling = self.GraphDist.copy()
-                #scaling[scaling <= 1] = 1
-                scaling[scaling != 1] = 0
-                self.A = (scaling.T/scaling.sum(0)).T
+                #scaling = self.GraphDist.copy()
+                #scaling[scaling != 1] = 0
+                self.A = (self.GraphDist.T/self.GraphDist.sum(0)).T
             else:
                 print('ERROR: signal parameter must be either \'neighbor\' or \'dispersion\'')
 
@@ -286,7 +301,7 @@ class Organoid(Parameters):
             rhs[:self.nofCells] = self.r_N*pN - self.gamma_N*self.N
             rhs[self.nofCells:] = self.r_G*pG - self.gamma_G*self.G
                                 
-            self.u = self.u + self.dt*rhs
+            self.u = self.u + self.tau*self.dt*rhs
             self.N = self.u[:self.nofCells]
             self.G = self.u[self.nofCells:]
 
@@ -425,6 +440,38 @@ class Organoid(Parameters):
                 ax.scatter(self.pos[:,0], self.pos[:,1], self.pos[:,2], c=Val, cmap = 'cool', s=size)
             
             ax.axis('off')
+
+    def circularPlot(self, TF='GATA6', nofPlots = 4, size = None, bounds = None, radius = 'individual', cmap = 'cool'):
+
+        t_circ = np.linspace(0,3/2*np.pi,nofPlots) + np.pi
+        for i in range(nofPlots):
+            org = Organoid()
+            org.dim = self.dim
+            index = int(i/(nofPlots-1)*(len(self.Data)-1))
+            org.nofCells = len(self.Data[index][0])
+            org.pos = self.Data[index][0]
+            org.r = self.Data[index][1]
+            org.N = self.Data[index][2]
+            org.G = self.Data[index][3]
+            org.dist = cdist(org.pos, org.pos)
+
+            if TF == 'NANOG':
+                val = org.N
+            if TF == 'GATA6':
+                val = org.G
+
+            move = np.max(org.dist)/2
+            plotradius =  nofPlots*2.5 + move
+            org.pos += np.array([plotradius*np.sin(t_circ[i]),plotradius*np.cos(t_circ[i])])
+            org.cellPlot(val, size=size, bounds=bounds, radius=radius,cmap=cmap)
+            org.pos -= np.array([plotradius*np.sin(t_circ[i]),plotradius*np.cos(t_circ[i])])
+
+        t_cont = np.linspace(0,3/2*np.pi,1000) + np.pi
+        x=.85*nofPlots*2.5*np.sin(t_cont)
+        y=.85*nofPlots*2.5*np.cos(t_cont)
+        plt.plot(x,y, color='k', lw=2)
+        plt.text(0,0,'time', fontsize=20, horizontalalignment='center', verticalalignment='center')
+        plt.arrow(x[-2], y[-2], x[-1]-x[-2], y[-1]-y[-2], width=0.0001, head_width=.5, color='k')
 
     def timePlot(self):
 

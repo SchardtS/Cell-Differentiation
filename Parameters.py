@@ -1,7 +1,7 @@
 class Parameters:
     def __init__(self):
         #### time parameters ####
-        self.T = 24                               # Time
+        self.T = 234.73532973888538               # Time
         self.nofSteps = 5000                      # Number of timesteps
               
         #### geometry parameters ####
@@ -18,6 +18,9 @@ class Parameters:
         self.eps_S = -2
         self.eps_NS = -2
         self.eps_GS = -2
+
+        # time scale adjustment
+        self.tau = 1
 
         # decay rates
         self.gamma_N = 10
