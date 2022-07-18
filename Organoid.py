@@ -470,6 +470,7 @@ class Organoid(Parameters):
         x=.85*nofPlots*2.5*np.sin(t_cont)
         y=.85*nofPlots*2.5*np.cos(t_cont)
         plt.plot(x,y, color='k', lw=2)
+        plt.scatter(.85*nofPlots*2.5*np.sin(t_circ),.85*nofPlots*2.5*np.cos(t_circ), color='k')
         plt.text(0,0,'time', fontsize=20, horizontalalignment='center', verticalalignment='center')
         plt.arrow(x[-2], y[-2], x[-1]-x[-2], y[-1]-y[-2], width=0.0001, head_width=.5, color='k')
 
