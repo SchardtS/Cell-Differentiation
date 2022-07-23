@@ -2,11 +2,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from scipy.spatial.distance import cdist
-import networkx as nx
 from scipy.spatial import Delaunay
 import itertools
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
+import igraph as ig
 
 class ExpData():
     def __init__(self, file):
@@ -22,41 +22,43 @@ class ExpData():
         self.moran = {}
         self.GraphDist = {}
 
-    def info(self, ID):
-        print('Organoid', ID, 'is', self.stage[self.id == ID][0], 'old')
-        print('Organoid', ID, 'consists of', len(self.id[self.id == ID]), 'cells')
-        print('Organoid', ID, 'consists of', len(self.id[(self.id == ID) & (self.pop == 'N+G-')]), 'NANOG cells')
-        print('Organoid', ID, 'consists of', len(self.id[(self.id == ID) & (self.pop == 'N-G+')]), 'GATA6 cells')
+    def info(self, ID, output=False):
+        if output == True:
+            return [self.stage[self.id == ID][0], len(self.id[self.id == ID]),
+                    len(self.id[(self.id == ID) & (self.pop == 'N+G-')]),
+                    len(self.id[(self.id == ID) & (self.pop == 'N-G+')])]
+                
+        else:
+            print('Organoid', ID, 'is', self.stage[self.id == ID][0], 'old')
+            print('Organoid', ID, 'consists of', len(self.id[self.id == ID]), 'cells')
+            print('Organoid', ID, 'consists of', len(self.id[(self.id == ID) & (self.pop == 'N+G-')]), 'NANOG cells')
+            print('Organoid', ID, 'consists of', len(self.id[(self.id == ID) & (self.pop == 'N-G+')]), 'GATA6 cells')
 
     def graphdistance(self, ID):
         if not ID in self.GraphDist:   
             pos = self.pos[self.id == ID]
 
-            Gr = nx.Graph()
             Dist = cdist(pos, pos)
             tri = Delaunay(pos)
             n = len(pos)
 
             all_dist = []
-            for i in range(len(pos)):
+            for i in range(n):
                 neigh = tri.vertex_neighbor_vertices[1][tri.vertex_neighbor_vertices[0][i]:tri.vertex_neighbor_vertices[0][i+1]]
                 for j in neigh:
                     all_dist.append(Dist[i,j])
 
             self.cutoff = np.mean(all_dist) + 2*np.std(all_dist)
 
-            for simp in tri.simplices:
-                for path in list(itertools.combinations(simp, 2)):
+            A = np.zeros([n, n])
+            for nodes in tri.simplices:
+                for path in list(itertools.combinations(nodes, 2)):
                     if Dist[path[0],path[1]] < self.cutoff:
-                        nx.add_path(Gr, path)
+                        A[path[0],path[1]] = 1
+                        A[path[1],path[0]] = 1
 
-            Gdist_dict = dict(nx.all_pairs_dijkstra_path_length(Gr))
-            Gdist = np.empty([n, n])
-            for i in range(n):
-                for j in range(n):
-                    Gdist[i,j] = Gdist_dict[i][j]
-
-            self.GraphDist[ID] = Gdist
+            G = ig.Graph.Adjacency(A, mode="undirected")
+            self.GraphDist[ID] = np.array(G.shortest_paths())
         
     def pcf_bounds(self, ID, sample_size, portion_N = 1, plot = True):
         if ID in self.pcf and self.sample_size == sample_size:

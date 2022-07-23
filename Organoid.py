@@ -276,8 +276,6 @@ class Organoid(Parameters):
                 np.fill_diagonal(scaling, 0)
                 self.A = (scaling.T/max(scaling.sum(0))).T
             elif self.signal == 'neighbor':
-                #scaling = self.GraphDist.copy()
-                #scaling[scaling != 1] = 0
                 self.A = (self.GraphDist.T/self.GraphDist.sum(0)).T
             else:
                 print('ERROR: signal parameter must be either \'neighbor\' or \'dispersion\'')
@@ -491,9 +489,24 @@ class Organoid(Parameters):
         plt.ylabel('Concentrations')
 
     def pcf(self, ls = 'solid', lw = 2, plot = True, font_size=14):
+        if self.signal == 'neighbor':
+            org = Organoid()
+            org.dim = self.dim
+            org.nofCells = self.nofCells
+            org.pos = self.pos
+            org.r = self.r
+            org.N = self.N
+            org.dist = self.dist
+            org.ignore = self.ignore
+            org.signal = 'dispersion'
+            org.graphdistance()
+            GraphDist = org.GraphDist
+        else:
+            GraphDist = self.GraphDist
+
         x = np.zeros(self.nofCells)
         x[self.N > self.G] = 1
-        maxdist = int(np.max(self.GraphDist))
+        maxdist = int(np.max(GraphDist))
         ind_N = np.where(x==1)[0]
         ind_G = np.where(x==0)[0]
         if ind_N.size == 0:
@@ -506,23 +519,23 @@ class Organoid(Parameters):
                 self.pcf_G[i-1] = 0
                 
         else:
-            dist_N = self.GraphDist[ind_N].T[ind_N].T
+            dist_N = GraphDist[ind_N].T[ind_N].T
             rho_N = sum(x)/len(x)*(sum(x)-1)/(len(x)-1)
 
-            dist_G = self.GraphDist[ind_G].T[ind_G].T
+            dist_G = GraphDist[ind_G].T[ind_G].T
             rho_G = (len(x)-sum(x))/len(x)*((len(x)-sum(x))-1)/(len(x)-1)
 
             self.pcf_N = np.empty(maxdist)
             self.pcf_G = np.empty(maxdist)
             for i in range(1,maxdist+1):
-                self.pcf_N[i-1] = len(dist_N[dist_N==i])/len(self.GraphDist[self.GraphDist==i])/rho_N
-                self.pcf_G[i-1] = len(dist_G[dist_G==i])/len(self.GraphDist[self.GraphDist==i])/rho_G
+                self.pcf_N[i-1] = len(dist_N[dist_N==i])/len(GraphDist[GraphDist==i])/rho_N
+                self.pcf_G[i-1] = len(dist_G[dist_G==i])/len(GraphDist[GraphDist==i])/rho_G
 
         if plot == True:
             plt.rc('font', size=font_size)
             plt.plot(range(1,maxdist+1), self.pcf_G, color='m', lw = lw, ls = ls)
             plt.plot(range(1,maxdist+1), self.pcf_N, color='c', lw = lw, ls = ls)
-            plt.axhline(1, ls='dashed', color='k')
+            plt.axhline(1, ls='dashed', color='k', label='_nolegend_')
             plt.xlabel('Distance')
             plt.ylabel('$\\rho_u, \\rho_v$')
 
@@ -543,29 +556,30 @@ class Organoid(Parameters):
         self.Data.append([self.pos,self.r,self.N,self.G])
         return
 
-    def saveData(self, directory = ''):
+    def saveData(self, directory = '', plot = True):
         
         # Create directory if not existent
         if not os.path.exists(directory):
             os.mkdir(directory)
 
-        # Save plot of geometry
-        plt.figure(figsize=[6.4, 4.8])
-        self.cellPlot(radius = 'mean')
-        plt.savefig(directory + 'tissue.png', transparent = True) 
-        plt.savefig(directory + 'tissue.pdf', transparent = True)   
+        if plot == True:
+            # Save plot of geometry
+            plt.figure(figsize=[6.4, 4.8])
+            self.cellPlot(radius = 'mean')
+            plt.savefig(directory + 'tissue.png', transparent = True) 
+            plt.savefig(directory + 'tissue.pdf', transparent = True)   
 
-        # Save plot of NANOG
-        plt.figure(figsize=[6.4, 4.8])
-        self.cellPlot(self.N, radius = 'mean')
-        plt.savefig(directory + 'NANOG.png', transparent = True) 
-        plt.savefig(directory + 'NANOG.pdf', transparent = True)   
+            # Save plot of NANOG
+            plt.figure(figsize=[6.4, 4.8])
+            self.cellPlot(self.N, radius = 'mean')
+            plt.savefig(directory + 'NANOG.png', transparent = True) 
+            plt.savefig(directory + 'NANOG.pdf', transparent = True)   
 
-        # Save plot of GATA6
-        plt.figure(figsize=[6.4, 4.8])
-        self.cellPlot(self.G, radius = 'mean')
-        plt.savefig(directory + 'GATA6.png', transparent = True) 
-        plt.savefig(directory + 'GATA6.pdf', transparent = True)
+            # Save plot of GATA6
+            plt.figure(figsize=[6.4, 4.8])
+            self.cellPlot(self.G, radius = 'mean')
+            plt.savefig(directory + 'GATA6.png', transparent = True) 
+            plt.savefig(directory + 'GATA6.pdf', transparent = True)
 
         # Save organoid Data
         df = pd.DataFrame()
