@@ -71,7 +71,15 @@ class Organoid(Parameters):
             self.dist = cdist(self.pos, self.pos)
         else:
             self.dist = np.array([0])
-        
+
+    def reset_TF(self):
+        N0 = self.r_N/self.gamma_N*3/4
+        G0 = self.r_G/self.gamma_G*3/4
+        self.u = np.append(np.random.normal(N0, N0*0.01, self.nofCells),
+                           np.random.normal(G0, G0*0.01, self.nofCells))
+        self.N = self.u[:self.nofCells]
+        self.G = self.u[self.nofCells:]
+      
     def radiusGrowth(self):
         if 'division' in self.ignore:
             return
