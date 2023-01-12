@@ -254,25 +254,6 @@ class Organoid(Parameters):
             if self.signal == 'dispersion':
                 G = ig.Graph.Adjacency(A, mode="undirected")
                 self.GraphDist = np.array(G.shortest_paths())
-#
-            #Gr = nx.Graph()
-            #self.dist = cdist(self.pos, self.pos)
-            #rr = self.r + self.r[:,None]
-            #tri = Delaunay(self.pos)
-            #                    
-            #for nodes in tri.simplices:
-            #    for path in list(itertools.combinations(nodes, 2)):
-            #        if self.dist[path[0],path[1]] < rr[path[0],path[1]]:
-            #            nx.add_path(Gr, path)
-#
-            #dist_dict = dict(nx.all_pairs_shortest_path_length(Gr))
-            ##dist_dict = dict(nx.all_pairs_dijkstra_path_length(Gr))
-            #self.GraphDist = np.empty([self.nofCells, self.nofCells])
-            #for i in range(self.nofCells):
-            #    for j in range(self.nofCells):
-            #        self.GraphDist[i,j] = dist_dict[i][j]
-
-            #self.GraphDist = np.floor(self.dist/np.mean(2*self.r))
 
     def communication(self):
         if 'transcription' in self.ignore:
