@@ -2,11 +2,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from scipy.spatial.distance import cdist
+import networkx as nx
 from scipy.spatial import Delaunay
 import itertools
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
-import igraph as ig
 
 class ExpData():
     def __init__(self, file):
@@ -22,43 +22,43 @@ class ExpData():
         self.moran = {}
         self.GraphDist = {}
 
-    def info(self, ID, output=False):
-        if output == True:
-            return [self.stage[self.id == ID][0], len(self.id[self.id == ID]),
-                    len(self.id[(self.id == ID) & (self.pop == 'N+G-')]),
-                    len(self.id[(self.id == ID) & (self.pop == 'N-G+')])]
-                
-        else:
-            print('Organoid', ID, 'is', self.stage[self.id == ID][0], 'old')
-            print('Organoid', ID, 'consists of', len(self.id[self.id == ID]), 'cells')
-            print('Organoid', ID, 'consists of', len(self.id[(self.id == ID) & (self.pop == 'N+G-')]), 'NANOG cells')
-            print('Organoid', ID, 'consists of', len(self.id[(self.id == ID) & (self.pop == 'N-G+')]), 'GATA6 cells')
+
+    def info(self, ID):
+        print('Organoid', ID, 'is', self.stage[self.id == ID][0], 'old')
+        print('Organoid', ID, 'consists of', len(self.id[self.id == ID]), 'cells')
+        print('Organoid', ID, 'consists of', len(self.id[(self.id == ID) & (self.pop == 'N+G-')]), 'NANOG cells')
+        print('Organoid', ID, 'consists of', len(self.id[(self.id == ID) & (self.pop == 'N-G+')]), 'GATA6 cells')
+
 
     def graphdistance(self, ID):
         if not ID in self.GraphDist:   
             pos = self.pos[self.id == ID]
 
+            Gr = nx.Graph()
             Dist = cdist(pos, pos)
             tri = Delaunay(pos)
             n = len(pos)
 
             all_dist = []
-            for i in range(n):
+            for i in range(len(pos)):
                 neigh = tri.vertex_neighbor_vertices[1][tri.vertex_neighbor_vertices[0][i]:tri.vertex_neighbor_vertices[0][i+1]]
                 for j in neigh:
                     all_dist.append(Dist[i,j])
 
             self.cutoff = np.mean(all_dist) + 2*np.std(all_dist)
 
-            A = np.zeros([n, n])
-            for nodes in tri.simplices:
-                for path in list(itertools.combinations(nodes, 2)):
+            for simp in tri.simplices:
+                for path in list(itertools.combinations(simp, 2)):
                     if Dist[path[0],path[1]] < self.cutoff:
-                        A[path[0],path[1]] = 1
-                        A[path[1],path[0]] = 1
+                        nx.add_path(Gr, path)
 
-            G = ig.Graph.Adjacency(A, mode="undirected")
-            self.GraphDist[ID] = np.array(G.shortest_paths())
+            Gdist_dict = dict(nx.all_pairs_dijkstra_path_length(Gr))
+            Gdist = np.empty([n, n])
+            for i in range(n):
+                for j in range(n):
+                    Gdist[i,j] = Gdist_dict[i][j]
+
+            self.GraphDist[ID] = Gdist
         
     def pcf_bounds(self, ID, sample_size, portion_N = 1, plot = True):
         if ID in self.pcf and self.sample_size == sample_size:
@@ -409,27 +409,6 @@ class ExpData():
             fig.show()
         else:
             fig.write_html(file)
-
-    def combinedPlot(self, stage, sample_size, file=None):
-        for ID in np.unique(self.id):
-            if stage in self.stage[self.id == ID]:
-                self.pcf_bounds(ID, sample_size, plot = False)
-                
-                #ranges = list(range(1,len(self.pcf[ID][0])+1))
-                ranges = np.linspace(0, 1, len(self.pcf[ID][0]))
-                plt.fill_between(ranges, self.pcf[ID][0], self.pcf[ID][2], color='m', alpha=0.05, label='NANOG')
-                plt.fill_between(ranges, self.pcf[ID][3], self.pcf[ID][5], color='c', alpha=0.05, label='GATA6')
-                #plt.plot(ranges, self.pcf[ID][1], 'm', lw=2)
-                #plt.plot(ranges, self.pcf[ID][4], 'c', lw=2)
-
-        plt.xlabel('Normalized distance')
-        plt.ylabel('$\\rho$')
-        plt.legend(['NANOG', 'GATA6'])
-
-        if file == None:
-            plt.show()
-        else:
-            plt.savefig(file)
 
     def propPlot(self, ID):
         #plt.rc('font', size=14)
