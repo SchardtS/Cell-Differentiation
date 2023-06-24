@@ -14,6 +14,8 @@ from scipy.spatial import Delaunay
 import itertools
 from scipy.optimize import fsolve
 from scipy.special import erf
+from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
+from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 
 def norm(x):
     return sum(x**2)**(1/2)
@@ -461,21 +463,54 @@ class Organoid(Parameters):
         plt.text(0,0,'time', fontsize=20, horizontalalignment='center', verticalalignment='center')
         plt.arrow(x[-2], y[-2], x[-1]-x[-2], y[-1]-y[-2], width=0.0001, head_width=.5, color='k')
 
-    def timePlot(self):
+    def timePlot(self, TF='NANOG', zoom=None):
 
-        plt.figure()
+        fig, ax = plt.subplots(figsize=[6.4, 4.8])
+        
+        NANOG = np.empty([self.nofCells, int(self.T/self.dt)])
+        GATA6 = np.empty([self.nofCells, int(self.T/self.dt)])
         for i in range(self.nofCells):
             t = []
-            NANOG = []
             for k in range(int(self.T/self.dt)):
                 if len(self.Data[k][2])-1 >= i:
-                    NANOG.append(self.Data[k][2][i])
+                    NANOG[i,k] = self.Data[k][2][i]
+                    GATA6[i,k]= self.Data[k][3][i]
                     t.append(k*self.dt)
-            plt.plot(t, NANOG)
+                    
+            t=np.array(t)
+        for i in range(self.nofCells):    
+            if TF == 'NANOG':
+                ax.plot(t, NANOG[i,:])
+                ax.set_ylabel('$u$')
+            elif TF == 'GATA6':
+                ax.plot(t, GATA6[i,:])
+                ax.set_ylabel('$v$')
 
-        plt.title('NANOG')
-        plt.xlabel('Time')
-        plt.ylabel('Concentrations')
+        ax.set_xlabel('Time')
+        
+        if zoom != None:
+
+            t2 = t[(t >= zoom[0]) & (t <= zoom[1])]
+            NANOG2 = NANOG[:, (t >= zoom[0]) & (t <= zoom[1])]
+            GATA62 = GATA6[:, (t >= zoom[0]) & (t <= zoom[1])]
+            axins = ax.inset_axes([.4,.4,.5,.5])
+
+            if TF == 'NANOG':
+                for i in range(self.nofCells):
+                    axins.plot(t2, NANOG2[i,:])
+                x1, x2, y1, y2 = t2[0], t2[-1], -.0025, .1025
+
+            if TF == 'GATA6':
+                for i in range(self.nofCells):
+                    axins.plot(t2, GATA62[i,:])
+                x1, x2, y1, y2 = t2[0], t2[-1], -.0025, .1025
+
+            axins.set_xlim(x1, x2)
+            axins.set_ylim(y1, y2)
+
+            mark_inset(ax, axins, loc1=1, loc2=4, fc="none", ec="0.5")
+        
+        
 
     def pcf(self, ls = 'solid', lw = 2, plot = True, font_size=14):
         if self.signal == 'neighbor':
@@ -602,9 +637,11 @@ class Organoid(Parameters):
             org.pos = self.Data[i][0]
             org.r = self.Data[i][1]
             org.N = self.Data[i][2]
+            org.G = self.Data[i][3]
             #org.dist = cdist(org.pos, org.pos)
 
-            org.cellPlot(size=1000/self.nofCells, bounds=[min(self.N),max(self.N)])
+            #org.cellPlot(size=1000/self.nofCells, bounds=[min(self.N),max(self.N)])
+            org.cellPlot(org.G, size=0, bounds=[min(self.N),max(self.N)])
             plt.xlim(bmin, bmax)
             plt.ylim(bmin, bmax)
             if self.dim == 3:
