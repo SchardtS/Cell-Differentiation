@@ -3,19 +3,22 @@ from Organoid import Organoid
 import matplotlib.pyplot as plt
 import numpy as np
 
-
-
 # Instantiate organoid class
 org = Organoid()
-#org.signal = 'dispersion'
+org.signal = 'dispersion'
+org.q = 0.7
+org.eps_N = -7
+org.tau = 3
 #
 ## Run simulation for specified amount of time. If not specified its 24 hours
-org.evolution(T=250,  dim=2, ignore=['transcription'])
+org.evolution(T=255,  dim=2)
+#org.evolution(T=250,  dim=2, ignore=['division', 'displacement'])
 print(org.nofCells)
 #
 ## Plot the result
-org.cellPlot()
-plt.savefig('Results/Organoid.png', transparent=True)
+org.cellPlot(org.G, size = 0, radius='mean')
+plt.savefig('Organoid.png', transparent=True)
+#plt.savefig('Results/Organoid.png', transparent=True)
 #plt.show()
 #
 #print(min(org.N), max(org.N))
@@ -25,7 +28,7 @@ plt.savefig('Results/Organoid.png', transparent=True)
 #plt.show()
 
 # Save animation
-org.saveAnim(directory='Results', frames= 1000)
+#org.saveAnim(directory='Results', frames= 1000)
 
 #dat = ExpData('Data/includingSurfaceDistance/extendedRawDataICMOrganoids.csv')
 #dat.combinedPlot('48h', 1000, file=None)

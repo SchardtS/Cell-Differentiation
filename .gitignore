@@ -1,6 +1,7 @@
 Results/
 DatenSimon/
-.vscode/settings.json
+.vscode/
+__pycache__/
 Results/Cell Fate/GATA6.pdf
 Results/Cell Fate/GATA6.png
 Results/Cell Fate/NANOG.pdf
@@ -17,4 +18,4 @@ Results/Cell Fate/GATA6.pdf
 Results/Cell Fate/GATA6.png
 Results/Cell Fate/NANOG.pdf
 Results/Cell Fate/NANOG.png
-.ipynb_checkpoints/morans_random-checkpoint.png
+.ipynb_checkpoints/
